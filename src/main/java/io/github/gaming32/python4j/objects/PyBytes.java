@@ -10,6 +10,7 @@ public class PyBytes extends PyVarObject {
         }
     }
 
+    private long hash = -1;
     private final byte[] bytes;
 
     private PyBytes(byte[] bytes) {
@@ -39,6 +40,10 @@ public class PyBytes extends PyVarObject {
         }
         System.arraycopy(bytes, 0, result.bytes, 0, size);
         return result;
+    }
+
+    public static PyBytes fromBytes(byte[] bytes) {
+        return fromBytesAndSize(bytes, bytes.length);
     }
 
     public int length() {
@@ -93,6 +98,15 @@ public class PyBytes extends PyVarObject {
     public boolean __bool__() {
         return bytes.length > 0;
     }
+
+    @Override
+    public long __hash__() {
+        if (hash != -1L) {
+            return hash;
+        }
+        return hash = hash(bytes);
+    }
+
 
     public static long hash(byte[] bytes) {
         if (bytes.length == 0) {
