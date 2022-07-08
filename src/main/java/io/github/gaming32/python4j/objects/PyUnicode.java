@@ -33,7 +33,7 @@ public class PyUnicode extends PyObject {
     private static final int FLAG_INTERNED = 0x10;
     private static final int FLAG_SHIFT = 3;
 
-    private long hash = -1;
+    private long hash = -1L;
     private byte kindAndFlags;
     private final byte[] data;
 
@@ -112,6 +112,14 @@ public class PyUnicode extends PyObject {
 
     public int length() {
         return data.length >> getKind();
+    }
+
+    @Override
+    public long __hash__() {
+        if (hash != -1L) {
+            return hash;
+        }
+        return hash = PyBytes.hash(data);
     }
 
     public int getCodePoint(int index) {
