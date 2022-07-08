@@ -16,7 +16,6 @@ public final class Opcode {
     public static final Set<Integer> HAS_LOCAL;
     public static final Set<Integer> HAS_COMPARE;
     public static final Set<Integer> HAS_FREE;
-    public static final Set<Integer> HAS_EXC;
     public static final List<String> OP_NAME;
     public static final Map<String, Integer> OP_MAP;
 
@@ -33,24 +32,16 @@ public final class Opcode {
             final Set<Integer> hasLocal = new HashSet<>();
             final Set<Integer> hasCompare = new HashSet<>();
             final Set<Integer> hasFree = new HashSet<>();
-            final Set<Integer> hasExc = new HashSet<>();
 
-            @SuppressWarnings("rawtypes")
-            final Set[] opLists = {
-                hasArg,
-                hasConst,
-                hasName,
-                hasJrel,
-                hasJabs,
-                hasLocal,
-                hasCompare,
-                hasFree,
-                hasExc
-            };
             final Map<String, Integer> opMap = new HashMap<>();
-            final Map<String, String[]> pseudoOps = new HashMap<>();
+            final String[] opName = new String[256]; {
+                for (int op = 0; op < opName.length; op++) {
+                    opName[op] = "<" + op + ">";
+                }
+            }
 
             void defOp(String name, int op) {
+                opName[op] = name;
                 opMap.put(name, op);
             }
 
@@ -62,20 +53,6 @@ public final class Opcode {
             void jrelOp(String name, int op) {
                 defOp(name, op);
                 hasJrel.add(op);
-            }
-
-            @SuppressWarnings("unchecked")
-            void pseudoOp(String name, int op, String[] realOps) {
-                defOp(name, op);
-                pseudoOps.put(name, realOps);
-                for (Set<Integer> opList : opLists) {
-                    for (String rop : realOps) {
-                        if (opList.contains(opMap.get(rop))) {
-                            opList.add(op);
-                            break;
-                        }
-                    }
-                }
             }
         }
         final OpcodeSetup o = new OpcodeSetup();
@@ -219,6 +196,7 @@ public final class Opcode {
         o.defOp("SET_UPDATE", 163);
         o.defOp("DICT_MERGE", 164);
         o.defOp("DICT_UPDATE", 165);
+        o.defOp("PRECALL", 166);
 
         o.defOp("CALL", 171);
         o.defOp("KW_NAMES", 172);
@@ -235,33 +213,6 @@ public final class Opcode {
             }
         }
 
-        final int MIN_PSEUDO_OPCODE = 256;
-
-        o.pseudoOp("SETUP_FINALLY", 256, new String[] {"NOP"});
-        o.hasExc.add(256);
-        o.pseudoOp("SETUP_CLEANUP", 257, new String[] {"NOP"});
-        o.hasExc.add(257);
-        o.pseudoOp("SETUP_WITH", 258, new String[] {"NOP"});
-        o.hasExc.add(258);
-        o.pseudoOp("POP_BLOCK", 259, new String[] {"NOP"});
-
-        o.pseudoOp("JUMP", 260, new String[] {"JUMP_FORWARD", "JUMP_BACKWARD"});
-        o.pseudoOp("JUMP_NO_INTERRUPT", 261, new String[] {"JUMP_FORWARD", "JUMP_BACKWARD_NO_INTERRUPT"});
-        o.pseudoOp("POP_JUMP_IF_FALSE", 262, new String[] {"POP_JUMP_FORWARD_IF_FALSE", "POP_JUMP_BACKWARD_IF_FALSE"});
-        o.pseudoOp("POP_JUMP_IF_TRUE", 263, new String[] {"POP_JUMP_FORWARD_IF_TRUE", "POP_JUMP_BACKWARD_IF_TRUE"});
-        o.pseudoOp("POP_JUMP_IF_NONE", 264, new String[] {"POP_JUMP_FORWARD_IF_NONE", "POP_JUMP_BACKWARD_IF_NONE"});
-        o.pseudoOp("POP_JUMP_IF_NOT_NONE", 265, new String[] {"POP_JUMP_FORWARD_IF_NOT_NONE", "POP_JUMP_BACKWARD_IF_NOT_NONE"});
-        o.pseudoOp("LOAD_METHOD", 266, new String[] {"LOAD_ATTR"});
-
-        final int MAX_PSEUDO_OPCODE = MIN_PSEUDO_OPCODE + o.pseudoOps.size() - 1;
-        final String[] opName = new String[MAX_PSEUDO_OPCODE + 1];
-        for (int op = 0; op < opName.length; op++) {
-            opName[op] = "<" + op + ">";
-        }
-        for (final Map.Entry<String, Integer> entry : o.opMap.entrySet()) {
-            opName[entry.getValue()] = entry.getKey();
-        }
-
         HAS_ARG = Set.copyOf(o.hasArg);
         HAS_CONST = Set.copyOf(o.hasConst);
         HAS_NAME = Set.copyOf(o.hasName);
@@ -270,8 +221,7 @@ public final class Opcode {
         HAS_LOCAL = Set.copyOf(o.hasLocal);
         HAS_COMPARE = Set.copyOf(o.hasCompare);
         HAS_FREE = Set.copyOf(o.hasFree);
-        HAS_EXC = Set.copyOf(o.hasExc);
-        OP_NAME = List.of(opName);
+        OP_NAME = List.of(o.opName);
         OP_MAP = Map.copyOf(o.opMap);
     }
 
@@ -413,50 +363,57 @@ public final class Opcode {
         })
     );
 
-    private static final Map<String, Map<String, Integer>> CACHE_FORMAT = Map.of(
-        "LOAD_GLOBAL", Map.of(
+    private static final Map<String, Map<String, Integer>> CACHE_FORMAT = Map.ofEntries(
+        Map.entry("LOAD_GLOBAL", Map.of(
             "counter", 1,
             "index", 1,
             "module_keys_version", 2,
             "builtin_keys_version", 1
-        ),
-        "BINARY_OP", Map.of(
+        )),
+        Map.entry("BINARY_OP", Map.of(
             "counter", 1
-        ),
-        "UNPACK_SEQUENCE", Map.of(
+        )),
+        Map.entry("UNPACK_SEQUENCE", Map.of(
             "counter", 1
-        ),
-        "COMPARE_OP", Map.of(
+        )),
+        Map.entry("COMPARE_OP", Map.of(
             "counter", 1,
             "mask", 1
-        ),
-        "BINARY_SUBSCR", Map.of(
+        )),
+        Map.entry("BINARY_SUBSCR", Map.of(
             "counter", 1,
             "type_version", 2,
             "func_version", 1
-        ),
-        "FOR_ITER", Map.of(
-            "counter", 1
-        ),
-        "LOAD_ATTR", Map.of(
+        )),
+        Map.entry("LOAD_ATTR", Map.of(
             "counter", 1,
             "version", 2,
             "keys_version", 2,
             "descr", 4
-        ),
-        "STORE_ATTR", Map.of(
+        )),
+        Map.entry("STORE_ATTR", Map.of(
             "counter", 1,
             "version", 2,
             "index", 1
-        ),
-        "CALL", Map.of(
+        )),
+        Map.entry("LOAD_METHOD", Map.of(
+            "counter", 1,
+            "type_version", 2,
+            "dict_offset", 1,
+            "keys_version", 2,
+            "descr", 4
+        )),
+        Map.entry("CALL", Map.of(
             "counter", 1,
             "func_version", 2,
             "min_args", 1
-        ),
-        "STORE_SUBSCR", Map.of(
+        )),
+        Map.entry("PRECALL", Map.of(
             "counter", 1
-        )
+        )),
+        Map.entry("STORE_SUBSCR", Map.of(
+            "counter", 1
+        ))
     );
 
     static final int[] INLINE_CACHE_ENTRIES = new int[256];
