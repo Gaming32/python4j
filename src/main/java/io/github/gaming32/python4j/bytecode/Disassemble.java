@@ -2,6 +2,7 @@ package io.github.gaming32.python4j.bytecode;
 
 import java.io.ByteArrayInputStream;
 import java.io.PrintStream;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -212,6 +213,8 @@ public final class Disassemble {
     private static final int FOR_ITER = Opcode.OP_MAP.get("FOR_ITER");
     private static final int LOAD_ATTR = Opcode.OP_MAP.get("LOAD_ATTR");
 
+    private static final int CACHE = Opcode.OP_MAP.get("CACHE");
+
     private static final String[] ALL_OPNAME = Opcode.OP_NAME.toArray(new String[0]);
     private static final Map<String, Integer> ALL_OPMAP = Opcode.OP_MAP;
     private static final Map<String, String> DEOPT_MAP = new HashMap<>();
@@ -228,29 +231,42 @@ public final class Disassemble {
     }
 
     public static void disassemble(PyCodeObject co, PrintStream out) {
+        disassemble(co, out, false);
+    }
+
+    public static void disassemble(PyCodeObject co, PrintStream out, boolean showCaches) {
         final Map<Integer, Integer> lineStarts = findLineStarts(co);
         final List<ExceptionTableEntry> exceptionEntries = parseExceptionTable(co);
         disassembleBytes0(
             co.getCo_code().toByteArray(), out,
             co::varnameFromOparg,
             co.getCo_names(), co.getCo_consts(),
-            lineStarts, exceptionEntries
+            lineStarts, exceptionEntries,
+            showCaches
         );
     }
 
     public static void disassembleRecursive(PyCodeObject co, PrintStream out) {
-        disassemble(co, out);
+        disassembleRecursive(co, out, false);
+    }
+
+    public static void disassembleRecursive(PyCodeObject co, PrintStream out, boolean showCaches) {
+        disassemble(co, out, showCaches);
         for (final PyObject x : co.getCo_consts()) {
             if (x instanceof PyCodeObject) {
                 out.println();
                 out.println("Disassembly of " + x.__repr__() + ":");
-                disassembleRecursive((PyCodeObject)x, out);
+                disassembleRecursive((PyCodeObject)x, out, showCaches);
             }
         }
     }
 
     public static void disassembleBytes(byte[] code, PrintStream out) {
-        disassembleBytes0(code, out, null, null, null, null, List.of());
+        disassembleBytes(code, out, false);
+    }
+
+    public static void disassembleBytes(byte[] code, PrintStream out, boolean showCaches) {
+        disassembleBytes0(code, out, null, null, null, null, List.of(), showCaches);
     }
 
     private static void disassembleBytes0(
@@ -258,7 +274,8 @@ public final class Disassemble {
         IntFunction<String> varnameFromOparg,
         PyTuple names, PyTuple co_consts,
         Map<Integer, Integer> lineStarts,
-        List<ExceptionTableEntry> exceptionEntries
+        List<ExceptionTableEntry> exceptionEntries,
+        boolean showCaches
     ) {
         final boolean showLineno = lineStarts != null;
         final int linenoWidth;
@@ -284,7 +301,9 @@ public final class Disassemble {
         } else {
             offsetWidth = 4;
         }
-        for (final Instruction instr : getInstructionsBytes(code, varnameFromOparg, names, co_consts, lineStarts, exceptionEntries)) {
+        for (final Instruction instr : getInstructionsBytes(
+            code, varnameFromOparg, names, co_consts, lineStarts, exceptionEntries, showCaches
+        )) {
             boolean newSourceLine = showLineno && instr.startsLine.isPresent() && instr.offset > 0;
             if (newSourceLine) {
                 out.println();
@@ -306,7 +325,8 @@ public final class Disassemble {
         IntFunction<String> varnameFromOparg,
         PyTuple names, PyTuple co_consts,
         Map<Integer, Integer> lineStarts,
-        List<ExceptionTableEntry> exceptionEntries
+        List<ExceptionTableEntry> exceptionEntries,
+        boolean showCaches
     ) {
         final List<Instruction> result = new ArrayList<>();
         final Set<Integer> labels = new HashSet<>(findLabels(code));
@@ -317,10 +337,11 @@ public final class Disassemble {
         }
         Integer startsLine = null;
         for (final OffsetOpArgTriple triple : unpackOpArgs(code)) {
+            int offset = triple.offset;
             if (lineStarts != null) {
-                startsLine = lineStarts.get(triple.offset);
+                startsLine = lineStarts.get(offset);
             }
-            final boolean isJumpTarget = labels.contains(triple.offset);
+            final boolean isJumpTarget = labels.contains(offset);
             PyObject argVal = null;
             String argRepr = "";
             final int deop = deoptop(triple.op);
@@ -356,7 +377,7 @@ public final class Disassemble {
                     argRepr = "to " + argVal.__repr__();
                 } else if (Opcode.HAS_JREL.contains(deop)) {
                     final int signedArg = isBackwardJump(deop) ? -arg : arg;
-                    int jArgVal = triple.offset + 2 + signedArg * 2;
+                    int jArgVal = offset + 2 + signedArg * 2;
                     if (deop == FOR_ITER) {
                         jArgVal += 2;
                     }
@@ -393,12 +414,33 @@ public final class Disassemble {
             result.add(new Instruction(
                 ALL_OPNAME[triple.op], triple.op, triple.arg,
                 argVal, argRepr,
-                triple.offset, Utils.boxedToOptional(startsLine), isJumpTarget,
+                offset, Utils.boxedToOptional(startsLine), isJumpTarget,
                 null
             ));
             final int caches = Opcode.INLINE_CACHE_ENTRIES[deop];
             if (caches == 0) continue;
-            // We don't do caches or positions yet, so this is all a no-op
+            if (!showCaches) {
+                // We don't do positions yet, so this is a no-op
+                continue;
+            }
+            for (final var entry : Opcode.CACHE_FORMAT.get(Opcode.OP_NAME.get(deop)).entrySet()) {
+                final int size = entry.getValue();
+                for (int i = 0; i < size; i++) {
+                    offset += 2;
+                    if (i == 0 && triple.op != deop) {
+                        final int cacheValue = Utils.getIntVal(code, offset, 2 * size, ByteOrder.nativeOrder());
+                        argRepr = entry.getKey() + ": " + cacheValue;
+                    } else {
+                        argRepr = "";
+                    }
+                    result.add(new Instruction(
+                        "CACHE", CACHE, OptionalInt.of(0),
+                        PyNoneType.PyNone, argRepr,
+                        offset, OptionalInt.empty(), false,
+                        null
+                    ));
+                }
+            }
         }
         return result;
     }

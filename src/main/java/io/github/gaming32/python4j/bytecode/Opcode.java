@@ -363,7 +363,7 @@ public final class Opcode {
         })
     );
 
-    private static final Map<String, Map<String, Integer>> CACHE_FORMAT = Map.ofEntries(
+    static final Map<String, Map<String, Integer>> CACHE_FORMAT = Map.ofEntries(
         Map.entry("LOAD_GLOBAL", Map.of(
             "counter", 1,
             "index", 1,

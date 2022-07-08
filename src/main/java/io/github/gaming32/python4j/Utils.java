@@ -1,5 +1,7 @@
 package io.github.gaming32.python4j;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.OptionalInt;
 
 public final class Utils {
@@ -18,5 +20,32 @@ public final class Utils {
     public static String rightJustify(String s, int width) {
         if (s.length() >= width) return s;
         return " ".repeat(width - s.length()) + s;
+    }
+
+    public static int getIntVal(byte[] buf, int offset, int size, ByteOrder order) {
+        return getIntVal(buf, offset, size, order, false);
+    }
+
+    public static int getIntVal(byte[] buf, int offset, int size, ByteOrder order, boolean signed) {
+        final ByteBuffer bb = ByteBuffer.wrap(buf, offset, size).order(order);
+        if (size == 4) {
+            return bb.getInt();
+        }
+        if (signed) {
+            switch (size) {
+                case 1:
+                    return bb.get();
+                case 2:
+                    return bb.getShort();
+            }
+        } else {
+            switch (size) {
+                case 1:
+                    return bb.get() & 0xff;
+                case 2:
+                    return bb.getShort() & 0xffff;
+            }
+        }
+        throw new IllegalArgumentException("Unsupported size: " + size);
     }
 }

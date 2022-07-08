@@ -9,7 +9,7 @@ import io.github.gaming32.python4j.pycfile.PycFile;
 public class AppTest {
     public static void main(String[] args) throws IOException {
         try (InputStream is = AppTest.class.getResourceAsStream("/test.cpython-311.pyc")) {
-            Disassemble.disassembleRecursive(PycFile.read(is).getCode(), System.out);
+            Disassemble.disassembleRecursive(PycFile.read(is).getCode(), System.out, true);
         }
     }
 }
