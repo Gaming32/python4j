@@ -10,4 +10,9 @@ public final class PyNoneType extends PyObject {
     public String __repr__() {
         return "None";
     }
+
+    @Override
+    public boolean __bool__() {
+        return false;
+    }
 }

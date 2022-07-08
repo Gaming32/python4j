@@ -1,6 +1,9 @@
 package io.github.gaming32.python4j.objects;
 
-public class PyTuple extends PyObject {
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+public class PyTuple extends PyObject implements Iterable<PyObject> {
     private static final PyTuple EMPTY = new PyTuple(new PyObject[0]);
 
     private final PyObject[] elements;
@@ -11,6 +14,13 @@ public class PyTuple extends PyObject {
 
     private PyTuple(int size) {
         elements = new PyObject[size];
+    }
+
+    public static PyTuple fromElements(PyObject... elements) {
+        if (elements.length == 0) {
+            return EMPTY;
+        }
+        return new PyTuple(elements);
     }
 
     public static PyTuple fromSize(int size) {
@@ -24,8 +34,32 @@ public class PyTuple extends PyObject {
         elements[index] = item;
     }
 
+    public PyObject getItem(int index) {
+        return elements[index];
+    }
+
     public int length() {
         return elements.length;
+    }
+
+    public Iterator<PyObject> iterator() {
+        return new Iterator<>() {
+            private int index = 0;
+
+            @Override
+            public boolean hasNext() {
+                return index < elements.length;
+            }
+
+            @Override
+            public PyObject next() {
+                try {
+                    return elements[index++];
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
     }
 
     @Override
@@ -41,5 +75,10 @@ public class PyTuple extends PyObject {
             sb.append(',');
         }
         return sb.append(')').toString();
+    }
+
+    @Override
+    public boolean __bool__() {
+        return elements.length > 0;
     }
 }

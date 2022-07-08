@@ -88,4 +88,9 @@ public class PyBytes extends PyVarObject {
     public byte[] toByteArray() {
         return bytes.clone();
     }
+
+    @Override
+    public boolean __bool__() {
+        return bytes.length > 0;
+    }
 }

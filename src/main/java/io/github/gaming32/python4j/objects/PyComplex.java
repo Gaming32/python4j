@@ -17,4 +17,9 @@ public class PyComplex extends PyObject {
     public String __repr__() {
         return "(" + real + "+" + imag + "j)";
     }
+
+    @Override
+    public boolean __bool__() {
+        return real != 0 || imag != 0;
+    }
 }

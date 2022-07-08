@@ -13,4 +13,16 @@ public final class PyBool extends PyLong {
     public String __repr__() {
         return digits[0] != 0 ? "True" : "False";
     }
+
+    public boolean booleanValue() {
+        return __bool__();
+    }
+
+    public static PyBool fromBoolean(boolean value) {
+        return value ? PyTrue : PyFalse;
+    }
+
+    public static PyBool bool(PyObject o) {
+        return fromBoolean(o.__bool__());
+    }
 }

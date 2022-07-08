@@ -90,6 +90,17 @@ public class PyLong extends PyVarObject {
         return result;
     }
 
+    @Override
+    public String __repr__() {
+        // TODO: reimplement to support values > Integer.MAX_VALUE
+        return String.valueOf(digits[0]);
+    }
+
+    @Override
+    public boolean __bool__() {
+        return digits.length != 1 || digits[0] != 0;
+    }
+
     private static boolean isSmallInt(int ival) {
         return -N_SMALL_NEG_INTS <= ival && ival <= N_SMALL_POS_INTS;
     }

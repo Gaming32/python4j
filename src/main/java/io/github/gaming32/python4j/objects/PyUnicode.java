@@ -5,14 +5,14 @@ import java.nio.charset.StandardCharsets;
 
 public class PyUnicode extends PyObject {
     private static final class GlobalStrings {
-        static PyUnicode empty = new PyUnicode(new byte[0]); // Default kindAndFlags
+        static PyUnicode empty = new PyUnicode(new byte[0], KIND_1BYTE | FLAG_COMPACT | FLAG_ASCII | FLAG_INTERNED);
         static PyUnicode[] ascii = new PyUnicode[128];
         static PyUnicode[] latin1 = new PyUnicode[128];
 
         static {
             for (int i = 0; i < 128; i++) {
-                ascii[i] = new PyUnicode(new byte[] { (byte)i });
-                latin1[i] = new PyUnicode(new byte[] { (byte)(i + 128) });
+                ascii[i] = new PyUnicode(new byte[] { (byte)i }, KIND_1BYTE | FLAG_COMPACT | FLAG_ASCII | FLAG_INTERNED);
+                latin1[i] = new PyUnicode(new byte[] { (byte)(i + 128) }, KIND_1BYTE | FLAG_COMPACT | FLAG_INTERNED);
             }
         }
 
@@ -30,7 +30,6 @@ public class PyUnicode extends PyObject {
 
     private static final int FLAG_COMPACT = 0x4;
     private static final int FLAG_ASCII = 0x8;
-    @SuppressWarnings("unused")
     private static final int FLAG_INTERNED = 0x10;
     private static final int FLAG_SHIFT = 3;
 
@@ -38,8 +37,9 @@ public class PyUnicode extends PyObject {
     private byte kindAndFlags;
     private final byte[] data;
 
-    private PyUnicode(byte[] data) {
+    private PyUnicode(byte[] data, int kindAndFlags) {
         this.data = data;
+        this.kindAndFlags = (byte)kindAndFlags;
     }
 
     private PyUnicode(int size) {
@@ -190,13 +190,56 @@ public class PyUnicode extends PyObject {
 
     public static PyUnicode fromString(String s) {
         boolean utf16 = false;
+        boolean isAscii = true;
         for (int i = 0; i < s.length(); i++) {
-            if (s.charAt(i) > 255) {
-                utf16 = true;
-                break;
+            final char c = s.charAt(i);
+            if (c > 127) {
+                isAscii = false;
+                if (c > 255) {
+                    utf16 = true;
+                    break;
+                }
             }
         }
-        return new PyUnicode(s.getBytes(utf16 ? StandardCharsets.UTF_16BE : StandardCharsets.ISO_8859_1));
+        return new PyUnicode(
+            s.getBytes(utf16 ? StandardCharsets.UTF_16BE : StandardCharsets.ISO_8859_1),
+            conversionFlags(utf16, isAscii)
+        );
+    }
+
+    public static PyUnicode fromCharArray(char[] s) {
+        boolean utf16 = false;
+        boolean isAscii = true;
+        for (int i = 0; i < s.length; i++) {
+            if (s[i] > 127) {
+                isAscii = false;
+                if (s[i] > 255) {
+                    utf16 = true;
+                    break;
+                }
+            }
+        }
+        final byte[] result = new byte[utf16 ? s.length << 1 : s.length];
+        if (utf16) {
+            for (int i = 0; i < s.length; i++) {
+                result[i << 1] = (byte)(s[i] >> 8);
+                result[(i << 1) + 1] = (byte)s[i];
+            }
+        } else {
+            for (int i = 0; i < s.length; i++) {
+                result[i] = (byte)s[i];
+            }
+        }
+        return new PyUnicode(result, conversionFlags(utf16, isAscii));
+    }
+
+    @Override
+    public boolean __bool__() {
+        return data.length > 0;
+    }
+
+    private static int conversionFlags(boolean utf16, boolean isAscii) {
+        return FLAG_COMPACT | (utf16 ? KIND_2BYTE : KIND_1BYTE) | (isAscii ? FLAG_ASCII : 0);
     }
 
     private static PyUnicode fromUCS1(byte[] u, int size) {

@@ -71,4 +71,9 @@ public class PyFloat extends PyObject {
     public String __repr__() {
         return Double.toString(fval);
     }
+
+    @Override
+    public boolean __bool__() {
+        return fval != 0;
+    }
 }

@@ -10,4 +10,9 @@ public abstract class PyVarObject extends PyObject {
     public void setSize(int size) {
         this.size = size;
     }
+
+    @Override
+    public boolean __bool__() {
+        return size != 0;
+    }
 }

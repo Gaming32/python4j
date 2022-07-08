@@ -32,4 +32,9 @@ public class PyDict extends PyObject {
         sb.append("}");
         return sb.toString();
     }
+
+    @Override
+    public boolean __bool__() {
+        return !elements.isEmpty();
+    }
 }

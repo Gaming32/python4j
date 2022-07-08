@@ -1,5 +1,7 @@
 package io.github.gaming32.python4j.objects;
 
+import java.util.Iterator;
+
 public class PyCodeObject extends PyObject {
     public static final class Builder {
         private PyUnicode filename;
@@ -149,6 +151,33 @@ public class PyCodeObject extends PyObject {
             validate();
             code.buildFrom(this);
             return code;
+        }
+    }
+
+    public static final class PyCodeAddressRange {
+        private int start, end, line;
+        private int computedLine, loNext, limit;
+
+        public PyCodeAddressRange(int start, int end, int line) {
+            this.start = start;
+            this.end = end;
+            this.line = line;
+        }
+
+        public int getStart() {
+            return start;
+        }
+
+        public int getEnd() {
+            return end;
+        }
+
+        public int getLine() {
+            return line;
+        }
+
+        private PyCodeAddressRange copy() {
+            return new PyCodeAddressRange(start, end, line);
         }
     }
 
@@ -333,6 +362,121 @@ public class PyCodeObject extends PyObject {
 
     public PyBytes getCo_code() {
         return co_code;
+    }
+
+    @Override
+    public String __repr__() {
+        return "<code object " +
+            co_name + " at 0x" +
+            Integer.toHexString(System.identityHashCode(this)) + ", file \"" +
+            co_filename + "\", line " +
+            (co_firstlineno != 0 ? co_firstlineno : -1) + ">";
+    }
+
+    private static final int LOCATION_INFO_SHORT0 = 0;
+    private static final int LOCATION_INFO_ONE_LINE0 = 10;
+    private static final int LOCATION_INFO_ONE_LINE1 = 11;
+    private static final int LOCATION_INFO_ONE_LINE2 = 12;
+    private static final int LOCATION_INFO_NO_COLUMNS = 13;
+    private static final int LOCATION_INFO_LONG = 14;
+    private static final int LOCATION_INFO_NONE = 15;
+
+    public Iterable<PyCodeAddressRange> co_lines() {
+        return () -> new Iterator<>() {
+            byte[] lineTable;
+            PyCodeAddressRange bounds;
+
+            {
+                initAddressRange();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return bounds.loNext < bounds.limit;
+            }
+
+            @Override
+            public PyCodeAddressRange next() {
+                bounds.computedLine += getLineDelta(bounds.loNext);
+                if (isNoLineMarker(bounds.loNext & 0xff)) {
+                    bounds.line = -1;
+                } else {
+                    bounds.line = bounds.computedLine;
+                }
+                bounds.start = bounds.end;
+                bounds.end += nextCodeDelta();
+                do {
+                    bounds.loNext++;
+                } while (bounds.loNext < bounds.limit && ((lineTable[bounds.loNext] & 0xff) & 128) == 0);
+                return bounds.copy();
+            }
+
+            private int nextCodeDelta() {
+                assert ((lineTable[bounds.loNext] & 0xff) & 128) != 0;
+                return (((lineTable[bounds.loNext] & 0xff) & 7) + 1) * 2;
+            }
+
+            private boolean isNoLineMarker(int b) {
+                return b >> 3 == 0x1f;
+            }
+
+            private int scanVarint(int ptr) {
+                int read = lineTable[ptr++] & 0xff;
+                int val = read & 63;
+                int shift = 0;
+                while ((read & 64) != 0) {
+                    read = lineTable[ptr++] & 0xff;
+                    shift += 6;
+                    val |= (read & 63) << shift;
+                }
+                return val;
+            }
+
+            private int scanSignedVarint(int ptr) {
+                int uval = scanVarint(ptr);
+                if ((uval & 1) != 0) {
+                    return -(uval >>> 1);
+                }
+                return uval >>> 1;
+            }
+
+            private int getLineDelta(int ptr) {
+                int code = ((lineTable[ptr] & 0xff) >> 3) & 15;
+                switch (code) {
+                    case LOCATION_INFO_NONE:
+                        return 0;
+                    case LOCATION_INFO_NO_COLUMNS:
+                    case LOCATION_INFO_LONG:
+                        return scanSignedVarint(ptr + 1);
+                    case LOCATION_INFO_ONE_LINE0:
+                        return 0;
+                    case LOCATION_INFO_ONE_LINE1:
+                        return 1;
+                    case LOCATION_INFO_ONE_LINE2:
+                        return 2;
+                    default:
+                        return 0;
+                }
+            }
+
+            private int initAddressRange() {
+                assert co_linetable != null;
+                lineTable = co_linetable.toByteArray();
+                initAddressRange0(lineTable, lineTable.length, co_firstlineno);
+                return bounds.line;
+            }
+
+            private void initAddressRange0(byte[] lineTable, int length, int firstLineNo) {
+                bounds = new PyCodeAddressRange(-1, 0, -1);
+                bounds.loNext = 0;
+                bounds.limit = length;
+                bounds.computedLine = firstLineNo;
+            }
+        };
+    }
+
+    public String varnameFromOparg(int oparg) {
+        return ((PyUnicode)co_localsplusnames.getItem(oparg)).toString();
     }
 
     private static void getLocalsPlusCounts(PyTuple names, PyBytes kinds, int[] returnValues) {

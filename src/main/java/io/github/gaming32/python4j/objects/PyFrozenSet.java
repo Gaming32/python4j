@@ -11,4 +11,9 @@ public class PyFrozenSet extends PySet {
     public String __repr__() {
         return "frozenset(" + super.__repr__() + ")";
     }
+
+    @Override
+    public boolean __bool__() {
+        return !elements.isEmpty();
+    }
 }

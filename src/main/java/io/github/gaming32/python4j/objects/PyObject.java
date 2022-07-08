@@ -1,6 +1,6 @@
 package io.github.gaming32.python4j.objects;
 
-public abstract class PyObject {
+public class PyObject {
     public String __str__() {
         return __repr__();
     }
@@ -21,5 +21,9 @@ public abstract class PyObject {
     @Override
     public int hashCode() {
         return Long.hashCode(__hash__());
+    }
+
+    public boolean __bool__() {
+        return true;
     }
 }
