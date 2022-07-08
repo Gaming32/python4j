@@ -364,6 +364,32 @@ public class PyCodeObject extends PyObject {
         return co_code;
     }
 
+    public PyTuple getCo_varnames() {
+        return getLocalsPlusNames(CO_FAST_LOCAL, co_nlocals);
+    }
+
+    public PyTuple getCo_cellvars() {
+        return getLocalsPlusNames(CO_FAST_CELL, co_ncellvars);
+    }
+
+    public PyTuple getCo_freevars() {
+        return getLocalsPlusNames(CO_FAST_FREE, co_nfreevars);
+    }
+
+    private PyTuple getLocalsPlusNames(int kind, int num) {
+        final byte[] kinds = co_localspluskinds.toByteArray();
+        final PyTuple names = PyTuple.fromSize(num);
+        int index = 0;
+        for (int offset = 0; offset < co_nlocalsplus; offset++) {
+            final int k = kinds[offset] & 0xff;
+            if ((k & kind) == 0) continue;
+            assert index < num;
+            names.setItem(index++, co_localsplusnames.getItem(offset));
+        }
+        assert index == num;
+        return names;
+    }
+
     @Override
     public String __repr__() {
         return "<code object " +

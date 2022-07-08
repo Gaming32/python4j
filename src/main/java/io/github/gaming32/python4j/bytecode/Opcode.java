@@ -22,6 +22,17 @@ public final class Opcode {
     public static final int HAVE_ARGUMENT;
     public static final int EXTENDED_ARG;
 
+    public static final int CO_OPTIMIZED = 1;
+    public static final int CO_NEWLOCALS = 2;
+    public static final int CO_VARARGS = 4;
+    public static final int CO_VARKEYWORDS = 8;
+    public static final int CO_NESTED = 16;
+    public static final int CO_GENERATOR = 32;
+    public static final int CO_NOFREE = 64;
+    public static final int CO_COROUTINE = 128;
+    public static final int CO_ITERABLE_COROUTINE = 256;
+    public static final int CO_ASYNC_GENERATOR = 512;
+
     static {
         class OpcodeSetup {
             final Set<Integer> hasArg = new HashSet<>();

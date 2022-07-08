@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -26,7 +27,7 @@ import io.github.gaming32.python4j.objects.PyTuple;
 import io.github.gaming32.python4j.objects.PyUnicode;
 
 public final class Disassemble {
-    private static final class ExceptionTableEntry {
+    public static final class ExceptionTableEntry {
         final int start, end, target, depth;
         final boolean lasti;
 
@@ -36,6 +37,26 @@ public final class Disassemble {
             this.target = target;
             this.depth = depth;
             this.lasti = lasti;
+        }
+
+        public int getStart() {
+            return start;
+        }
+
+        public int getEnd() {
+            return end;
+        }
+
+        public int getTarget() {
+            return target;
+        }
+
+        public int getDepth() {
+            return depth;
+        }
+
+        public boolean isLasti() {
+            return lasti;
         }
 
         @Override
@@ -151,7 +172,7 @@ public final class Disassemble {
         private static final int OPARG_WIDTH = 5;
 
         private String disassemble(int linenoWidth, int offsetWidth) {
-            final List<String> fields = new ArrayList<>();
+            final StringJoiner fields = new StringJoiner(" ");
             if (linenoWidth != 0) {
                 if (startsLine.isPresent()) {
                     fields.add(Utils.rightJustify(Integer.toString(startsLine.getAsInt()), linenoWidth));
@@ -173,7 +194,7 @@ public final class Disassemble {
                     fields.add("(" + argrepr + ")");
                 }
             }
-            return String.join(" ", fields).stripTrailing();
+            return fields.toString().stripTrailing();
         }
 
         @Override
@@ -269,7 +290,97 @@ public final class Disassemble {
         disassembleBytes0(code, out, null, null, null, null, List.of(), showCaches);
     }
 
-    private static void disassembleBytes0(
+    public static List<Instruction> getInstructions(PyCodeObject co) {
+        return getInstructions(co, false);
+    }
+
+    public static List<Instruction> getInstructions(PyCodeObject co, boolean showCaches) {
+        final Map<Integer, Integer> lineStarts = findLineStarts(co);
+        return getInstructionsBytes(
+            co.getCo_code().toByteArray(), co::varnameFromOparg,
+            co.getCo_names(), co.getCo_consts(),
+            lineStarts, null, showCaches
+        );
+    }
+
+    public static String codeInfo(PyCodeObject co) {
+        final StringJoiner lines = new StringJoiner("\n");
+        lines.add("Name:              " + co.getCo_name());
+        lines.add("Filename:          " + co.getCo_filename());
+        lines.add("Argument count:    " + co.getCo_argcount());
+        lines.add("Positional-only arguments: " + co.getCo_posonlyargcount());
+        lines.add("Kw-only arguments: " + co.getCo_kwonlyargcount());
+        lines.add("Number of locals:  " + co.getCo_nlocals());
+        lines.add("Stack size:        " + co.getCo_stacksize());
+        lines.add("Flags:             " + prettyFlags(co.getCo_flags()));
+        PyTuple values;
+        if ((values = co.getCo_consts()).__bool__()) {
+            lines.add("Constants:");
+            for (int i = 0; i < values.length(); i++) {
+                lines.add(Utils.rightJustify(Integer.toString(i), 4) + ": " + values.getItem(i));
+            }
+        }
+        if ((values = co.getCo_names()).__bool__()) {
+            lines.add("Names:");
+            for (int i = 0; i < values.length(); i++) {
+                lines.add(Utils.rightJustify(Integer.toString(i), 4) + ": " + values.getItem(i));
+            }
+        }
+        if ((values = co.getCo_varnames()).__bool__()) {
+            lines.add("Variable names:");
+            for (int i = 0; i < values.length(); i++) {
+                lines.add(Utils.rightJustify(Integer.toString(i), 4) + ": " + values.getItem(i));
+            }
+        }
+        if ((values = co.getCo_freevars()).__bool__()) {
+            lines.add("Free variables:");
+            for (int i = 0; i < values.length(); i++) {
+                lines.add(Utils.rightJustify(Integer.toString(i), 4) + ": " + values.getItem(i));
+            }
+        }
+        if ((values = co.getCo_cellvars()).__bool__()) {
+            lines.add("Cell variables:");
+            for (int i = 0; i < values.length(); i++) {
+                lines.add(Utils.rightJustify(Integer.toString(i), 4) + ": " + values.getItem(i));
+            }
+        }
+        return lines.toString();
+    }
+
+    private static final Map<Integer, String> COMPILER_FLAG_NAMES = Map.of(
+          1, "OPTIMIZED",
+          2, "NEWLOCALS",
+          4, "VARARGS",
+          8, "VARKEYWORDS",
+         16, "NESTED",
+         32, "GENERATOR",
+         64, "NOFREE",
+        128, "COROUTINE",
+        256, "ITERABLE_COROUTINE",
+        512, "ASYNC_GENERATOR"
+    );
+
+    private static String prettyFlags(int flags) {
+        final StringJoiner names = new StringJoiner(", ");
+        for (int i = 0; i < 32; i++) {
+            final int flag = 1 << i;
+            if ((flags & flag) != 0) {
+                String name = COMPILER_FLAG_NAMES.get(flag);
+                if (name == null) {
+                    name = "0x" + Integer.toHexString(flag);
+                }
+                names.add(name);
+                flags ^= flag;
+                if (flags == 0) break;
+            }
+        }
+        if (flags != 0) {
+            names.add("0x" + Integer.toHexString(flags));
+        }
+        return names.toString();
+    }
+
+    static void disassembleBytes0(
         byte[] code, PrintStream out,
         IntFunction<String> varnameFromOparg,
         PyTuple names, PyTuple co_consts,
@@ -320,7 +431,7 @@ public final class Disassemble {
         }
     }
 
-    private static List<Instruction> getInstructionsBytes(
+    static List<Instruction> getInstructionsBytes(
         byte[] code,
         IntFunction<String> varnameFromOparg,
         PyTuple names, PyTuple co_consts,
@@ -531,7 +642,7 @@ public final class Disassemble {
         return deoptName != null ? ALL_OPMAP.get(deoptName) : op;
     }
 
-    private static Map<Integer, Integer> findLineStarts(PyCodeObject co) {
+    static Map<Integer, Integer> findLineStarts(PyCodeObject co) {
         final Map<Integer, Integer> lineStarts = new HashMap<>();
         int lastLine = -1;
         for (PyCodeAddressRange range : co.co_lines()) {
@@ -544,7 +655,7 @@ public final class Disassemble {
         return lineStarts;
     }
 
-    private static List<ExceptionTableEntry> parseExceptionTable(PyCodeObject co) {
+    static List<ExceptionTableEntry> parseExceptionTable(PyCodeObject co) {
         final ByteArrayInputStream iterator = new ByteArrayInputStream(co.getCo_exceptiontable().toByteArray());
         final List<ExceptionTableEntry> entries = new ArrayList<>();
         try {
