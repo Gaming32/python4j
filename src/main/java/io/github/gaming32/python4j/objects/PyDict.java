@@ -1,13 +1,13 @@
 package io.github.gaming32.python4j.objects;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class PyDict extends PyObject {
     private final Map<PyObject, PyObject> elements; // TODO: reimplement without Java collections
 
     private PyDict() {
-        elements = new HashMap<>();
+        elements = new LinkedHashMap<>();
     }
 
     public static PyDict empty() {
