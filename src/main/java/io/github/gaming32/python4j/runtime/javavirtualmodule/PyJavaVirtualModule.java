@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.runtime.PyModule;
@@ -54,7 +55,7 @@ public final class PyJavaVirtualModule implements PyModule {
         }
     }
 
-    public static PyModule[] getVirtualModules() throws IllegalAccessException {
+    public static Map<String, PyModule> getVirtualModules() throws IllegalAccessException {
         try {
             return ServiceLoader.load(JavaVirtualModuleMarker.class)
                 .stream()
@@ -65,7 +66,7 @@ public final class PyJavaVirtualModule implements PyModule {
                         throw new RuntimeException(e);
                     }
                 })
-                .toArray(PyModule[]::new);
+                .collect(Collectors.toMap(m -> m.getName(), m -> m));
         } catch (RuntimeException e) {
             if (e.getCause() instanceof IllegalAccessException) {
                 throw (IllegalAccessException)e.getCause();
