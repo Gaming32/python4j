@@ -59,7 +59,7 @@ public class MarshalReader extends FilterInputStream {
     }
 
     public int readShort() throws IOException {
-        int x = readLong() | (readNoEof() << 8);
+        int x = readNoEof() | (readNoEof() << 8);
         x |= -(x & 0x8000);
         return x;
     }
