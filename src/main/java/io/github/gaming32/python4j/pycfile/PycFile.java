@@ -10,20 +10,28 @@ public final class PycFile {
     private static final int RAW_MAGIC = 0x0a0d0da6; // Python 3.11a7
 
     private final PyCodeObject code;
+    private final int[] metadata;
 
     private PycFile(MarshalReader in) throws IOException {
         int magic = in.readLong();
         if (magic != RAW_MAGIC) {
             throw new RuntimeException("Bad magic number in .pyc file");
         }
-        in.readLong();
-        in.readLong();
-        in.readLong();
+        metadata = new int[] {
+            in.readLong(),
+            in.readLong(),
+            in.readLong()
+        };
         PyObject value = in.readObject();
         if (!(value instanceof PyCodeObject)) {
             throw new RuntimeException("Bad code object in .pyc file");
         }
         code = (PyCodeObject)value;
+    }
+
+    public PycFile(PyCodeObject code, int[] metadata) {
+        this.code = code;
+        this.metadata = metadata;
     }
 
     public static PycFile read(InputStream is) throws IOException {
@@ -32,5 +40,9 @@ public final class PycFile {
 
     public PyCodeObject getCode() {
         return code;
+    }
+
+    public int[] getMetadata() {
+        return metadata;
     }
 }

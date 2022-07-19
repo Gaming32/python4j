@@ -295,11 +295,10 @@ public final class Disassemble {
     }
 
     public static List<Instruction> getInstructions(PyCodeObject co, boolean showCaches) {
-        final Map<Integer, Integer> lineStarts = findLineStarts(co);
         return getInstructionsBytes(
             co.getCo_code().toByteArray(), co::varnameFromOparg,
             co.getCo_names(), co.getCo_consts(),
-            lineStarts, null, showCaches
+            findLineStarts(co), parseExceptionTable(co), showCaches
         );
     }
 

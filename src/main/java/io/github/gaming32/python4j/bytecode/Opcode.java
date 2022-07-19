@@ -20,7 +20,6 @@ public final class Opcode {
     public static final Map<String, Integer> OP_MAP;
 
     public static final int HAVE_ARGUMENT;
-    public static final int EXTENDED_ARG;
 
     public static final int CO_OPTIMIZED = 1;
     public static final int CO_NEWLOCALS = 2;
@@ -32,6 +31,119 @@ public final class Opcode {
     public static final int CO_COROUTINE = 128;
     public static final int CO_ITERABLE_COROUTINE = 256;
     public static final int CO_ASYNC_GENERATOR = 512;
+
+    // region GENERATED CODE (see generate_opcode_fields.py)
+    public static final int CACHE = 0;
+    public static final int POP_TOP = 1;
+    public static final int PUSH_NULL = 2;
+    public static final int NOP = 9;
+    public static final int UNARY_POSITIVE = 10;
+    public static final int UNARY_NEGATIVE = 11;
+    public static final int UNARY_NOT = 12;
+    public static final int UNARY_INVERT = 15;
+    public static final int BINARY_SUBSCR = 25;
+    public static final int GET_LEN = 30;
+    public static final int MATCH_MAPPING = 31;
+    public static final int MATCH_SEQUENCE = 32;
+    public static final int MATCH_KEYS = 33;
+    public static final int PUSH_EXC_INFO = 35;
+    public static final int CHECK_EXC_MATCH = 36;
+    public static final int CHECK_EG_MATCH = 37;
+    public static final int WITH_EXCEPT_START = 49;
+    public static final int GET_AITER = 50;
+    public static final int GET_ANEXT = 51;
+    public static final int BEFORE_ASYNC_WITH = 52;
+    public static final int BEFORE_WITH = 53;
+    public static final int END_ASYNC_FOR = 54;
+    public static final int STORE_SUBSCR = 60;
+    public static final int DELETE_SUBSCR = 61;
+    public static final int GET_ITER = 68;
+    public static final int GET_YIELD_FROM_ITER = 69;
+    public static final int PRINT_EXPR = 70;
+    public static final int LOAD_BUILD_CLASS = 71;
+    public static final int LOAD_ASSERTION_ERROR = 74;
+    public static final int RETURN_GENERATOR = 75;
+    public static final int LIST_TO_TUPLE = 82;
+    public static final int RETURN_VALUE = 83;
+    public static final int IMPORT_STAR = 84;
+    public static final int SETUP_ANNOTATIONS = 85;
+    public static final int YIELD_VALUE = 86;
+    public static final int ASYNC_GEN_WRAP = 87;
+    public static final int PREP_RERAISE_STAR = 88;
+    public static final int POP_EXCEPT = 89;
+    public static final int STORE_NAME = 90;
+    public static final int DELETE_NAME = 91;
+    public static final int UNPACK_SEQUENCE = 92;
+    public static final int FOR_ITER = 93;
+    public static final int UNPACK_EX = 94;
+    public static final int STORE_ATTR = 95;
+    public static final int DELETE_ATTR = 96;
+    public static final int STORE_GLOBAL = 97;
+    public static final int DELETE_GLOBAL = 98;
+    public static final int SWAP = 99;
+    public static final int LOAD_CONST = 100;
+    public static final int LOAD_NAME = 101;
+    public static final int BUILD_TUPLE = 102;
+    public static final int BUILD_LIST = 103;
+    public static final int BUILD_SET = 104;
+    public static final int BUILD_MAP = 105;
+    public static final int LOAD_ATTR = 106;
+    public static final int COMPARE_OP = 107;
+    public static final int IMPORT_NAME = 108;
+    public static final int IMPORT_FROM = 109;
+    public static final int JUMP_FORWARD = 110;
+    public static final int JUMP_IF_FALSE_OR_POP = 111;
+    public static final int JUMP_IF_TRUE_OR_POP = 112;
+    public static final int POP_JUMP_FORWARD_IF_FALSE = 114;
+    public static final int POP_JUMP_FORWARD_IF_TRUE = 115;
+    public static final int LOAD_GLOBAL = 116;
+    public static final int IS_OP = 117;
+    public static final int CONTAINS_OP = 118;
+    public static final int RERAISE = 119;
+    public static final int COPY = 120;
+    public static final int BINARY_OP = 122;
+    public static final int SEND = 123;
+    public static final int LOAD_FAST = 124;
+    public static final int STORE_FAST = 125;
+    public static final int DELETE_FAST = 126;
+    public static final int POP_JUMP_FORWARD_IF_NOT_NONE = 128;
+    public static final int POP_JUMP_FORWARD_IF_NONE = 129;
+    public static final int RAISE_VARARGS = 130;
+    public static final int GET_AWAITABLE = 131;
+    public static final int MAKE_FUNCTION = 132;
+    public static final int BUILD_SLICE = 133;
+    public static final int JUMP_BACKWARD_NO_INTERRUPT = 134;
+    public static final int MAKE_CELL = 135;
+    public static final int LOAD_CLOSURE = 136;
+    public static final int LOAD_DEREF = 137;
+    public static final int STORE_DEREF = 138;
+    public static final int DELETE_DEREF = 139;
+    public static final int JUMP_BACKWARD = 140;
+    public static final int CALL_FUNCTION_EX = 142;
+    public static final int EXTENDED_ARG = 144;
+    public static final int LIST_APPEND = 145;
+    public static final int SET_ADD = 146;
+    public static final int MAP_ADD = 147;
+    public static final int LOAD_CLASSDEREF = 148;
+    public static final int COPY_FREE_VARS = 149;
+    public static final int RESUME = 151;
+    public static final int MATCH_CLASS = 152;
+    public static final int FORMAT_VALUE = 155;
+    public static final int BUILD_CONST_KEY_MAP = 156;
+    public static final int BUILD_STRING = 157;
+    public static final int LOAD_METHOD = 160;
+    public static final int LIST_EXTEND = 162;
+    public static final int SET_UPDATE = 163;
+    public static final int DICT_MERGE = 164;
+    public static final int DICT_UPDATE = 165;
+    public static final int PRECALL = 166;
+    public static final int CALL = 171;
+    public static final int KW_NAMES = 172;
+    public static final int POP_JUMP_BACKWARD_IF_NOT_NONE = 173;
+    public static final int POP_JUMP_BACKWARD_IF_NONE = 174;
+    public static final int POP_JUMP_BACKWARD_IF_FALSE = 175;
+    public static final int POP_JUMP_BACKWARD_IF_TRUE = 176;
+    // endregion GENERATED CODE
 
     static {
         class OpcodeSetup {
@@ -188,7 +300,6 @@ public final class Opcode {
         o.defOp("CALL_FUNCTION_EX", 142);  // Flags
 
         o.defOp("EXTENDED_ARG", 144);
-        EXTENDED_ARG = 144;
         o.defOp("LIST_APPEND", 145);
         o.defOp("SET_ADD", 146);
         o.defOp("MAP_ADD", 147);

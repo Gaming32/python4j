@@ -251,6 +251,7 @@ public final class MarshalWriter {
                 writePyLong(theLong);
             } else {
                 writeByte(TYPE_INT);
+                writeLong(longAndOverflow[0]);
             }
         } else if (obj.getClass() == PyFloat.class) {
             if (version > 1) {

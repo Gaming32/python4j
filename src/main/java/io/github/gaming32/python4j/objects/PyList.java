@@ -29,6 +29,10 @@ public class PyList extends PyObject {
         return elements.size();
     }
 
+    public PyObject[] toArray() {
+        return elements.toArray(PyObject[]::new);
+    }
+
     @Override
     public String __repr__() {
         StringBuilder sb = new StringBuilder("[");

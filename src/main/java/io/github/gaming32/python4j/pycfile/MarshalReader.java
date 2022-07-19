@@ -394,4 +394,8 @@ public class MarshalReader extends FilterInputStream {
         depth--;
         return result;
     }
+
+    public PyObject getRef(int i) {
+        return refs.get(i);
+    }
 }
