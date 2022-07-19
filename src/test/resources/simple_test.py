@@ -1,3 +1,7 @@
-a = 123
-(b := 'hello world')
-c = (123, 'abc')
+if 'hello':
+    'hi'
+else:
+    'world'
+
+if 123 is not None:
+    'banana'

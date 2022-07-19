@@ -38,6 +38,7 @@ public class PythonToJavaCompiler {
     static final String C_PYRUNTIME = "io/github/gaming32/python4j/runtime/PyRuntime";
     static final String C_CONDYBOOTSTRAPS = "io/github/gaming32/python4j/runtime/invoke/CondyBootstraps";
     static final String C_PYFRAME = "io/github/gaming32/python4j/runtime/PyFrame";
+    static final String C_PYOPERATOR = "io/github/gaming32/python4j/runtime/modules/PyOperator";
 
     private final String moduleName;
     private final PycFile pycFile;
@@ -150,11 +151,20 @@ public class PythonToJavaCompiler {
                 false
             );
         }
+        final Map<Integer, Label> jumpLabels = new HashMap<>();
         for (final Instruction insn : Disassemble.getInstructions(codeObj)) {
+            Label insnLabel = null;
+            if (insn.isJumpTarget()) {
+                insnLabel = jumpLabels.computeIfAbsent(insn.getOffset(), k -> new Label());
+            }
+            if (insnLabel == null && insn.getStartsLine().isPresent()) {
+                insnLabel = new Label();
+            }
+            if (insnLabel != null) {
+                meth.mark(insnLabel);
+            }
             if (insn.getStartsLine().isPresent()) {
-                final Label lineLabel = new Label();
-                meth.mark(lineLabel);
-                meth.visitLineNumber(insn.getStartsLine().getAsInt(), lineLabel);
+                meth.visitLineNumber(insn.getStartsLine().getAsInt(), insnLabel);
             }
             final int arg = insn.getArg().orElse(-1);
             switch (insn.getOpcode()) {
@@ -255,12 +265,7 @@ public class PythonToJavaCompiler {
                 case Opcode.LOAD_CONST: {
                     final PyObject constant = codeObj.getCo_consts().getItem(arg);
                     if (constant == PyNoneType.PyNone) {
-                        mv.visitFieldInsn(
-                            Opcodes.GETSTATIC,
-                            "io/github/gaming32/python4j/objects/PyNoneType",
-                            "PyNone",
-                            "Lio/github/gaming32/python4j/objects/PyNoneType;"
-                        );
+                        pushNone(mv);
                     } else {
                         ConstantDynamic condy = constantRefs.get(constant);
                         if (condy == null) {
@@ -332,6 +337,99 @@ public class PythonToJavaCompiler {
 
                 case Opcode.IS_OP:
                     invokeRuntime(meth, arg != 1 ? "is" : "isNot", "(L" + C_PYOBJECT + ";L" + C_PYOBJECT + ";)L" + C_PYOBJECT + ";");
+                    break;
+
+                case Opcode.JUMP_FORWARD:
+                    meth.goTo(getJumpLabel(jumpLabels, insn, arg));
+                    break;
+
+                case Opcode.JUMP_BACKWARD:
+                case Opcode.JUMP_BACKWARD_NO_INTERRUPT:
+                    meth.goTo(getJumpLabel(jumpLabels, insn, -arg));
+                    break;
+
+                case Opcode.POP_JUMP_FORWARD_IF_TRUE:
+                    meth.invokestatic(
+                        C_PYOPERATOR,
+                        "truthy",
+                        "(L" + C_PYOBJECT + ";)Z",
+                        false
+                    );
+                    meth.ifne(getJumpLabel(jumpLabels, insn, arg));
+                    break;
+
+                case Opcode.POP_JUMP_BACKWARD_IF_TRUE:
+                    meth.invokestatic(
+                        C_PYOPERATOR,
+                        "truthy",
+                        "(L" + C_PYOBJECT + ";)Z",
+                        false
+                    );
+                    meth.ifne(getJumpLabel(jumpLabels, insn, -arg));
+                    break;
+
+                case Opcode.POP_JUMP_FORWARD_IF_FALSE:
+                    meth.invokestatic(
+                        C_PYOPERATOR,
+                        "truthy",
+                        "(L" + C_PYOBJECT + ";)Z",
+                        false
+                    );
+                    meth.ifeq(getJumpLabel(jumpLabels, insn, arg));
+                    break;
+
+                case Opcode.POP_JUMP_BACKWARD_IF_FALSE:
+                    meth.invokestatic(
+                        C_PYOPERATOR,
+                        "truthy",
+                        "(L" + C_PYOBJECT + ";)Z",
+                        false
+                    );
+                    meth.ifeq(getJumpLabel(jumpLabels, insn, -arg));
+                    break;
+
+                case Opcode.POP_JUMP_FORWARD_IF_NONE:
+                    pushNone(mv);
+                    meth.ifacmpeq(getJumpLabel(jumpLabels, insn, arg));
+                    break;
+
+                case Opcode.POP_JUMP_BACKWARD_IF_NONE:
+                    pushNone(mv);
+                    meth.ifacmpeq(getJumpLabel(jumpLabels, insn, -arg));
+                    break;
+
+                case Opcode.POP_JUMP_FORWARD_IF_NOT_NONE:
+                    pushNone(mv);
+                    meth.ifacmpne(getJumpLabel(jumpLabels, insn, arg));
+                    break;
+
+                case Opcode.POP_JUMP_BACKWARD_IF_NOT_NONE:
+                    pushNone(mv);
+                    meth.ifacmpne(getJumpLabel(jumpLabels, insn, -arg));
+                    break;
+
+                case Opcode.JUMP_IF_TRUE_OR_POP:
+                    meth.dup();
+                    meth.invokestatic(
+                        C_PYOPERATOR,
+                        "truthy",
+                        "(L" + C_PYOBJECT + ";)Z",
+                        false
+                    );
+                    meth.ifne(getJumpLabel(jumpLabels, insn, arg));
+                    meth.pop();
+                    break;
+
+                case Opcode.JUMP_IF_FALSE_OR_POP:
+                    meth.dup();
+                    meth.invokestatic(
+                        C_PYOPERATOR,
+                        "truthy",
+                        "(L" + C_PYOBJECT + ";)Z",
+                        false
+                    );
+                    meth.ifeq(getJumpLabel(jumpLabels, insn, arg));
+                    meth.pop();
                     break;
 
                 case Opcode.LOAD_NAME:
@@ -408,12 +506,7 @@ public class PythonToJavaCompiler {
             "()L" + C_PYOBJECT + ";",
             false
         );
-        mv.visitFieldInsn(
-            Opcodes.GETSTATIC,
-            "io/github/gaming32/python4j/objects/PyNoneType",
-            "PyNone",
-            "Lio/github/gaming32/python4j/objects/PyNoneType;"
-        );
+        pushNone(mv);
         final Label successLabel = new Label();
         mv.visitJumpInsn(Opcodes.IF_ACMPEQ, successLabel);
         mv.visitTypeInsn(Opcodes.NEW, "java/lang/AssertionError");
@@ -431,6 +524,10 @@ public class PythonToJavaCompiler {
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(-1, -1);
         mv.visitEnd();
+    }
+
+    private static Label getJumpLabel(Map<Integer, Label> jumpLabels, Instruction insn, int arg) {
+        return jumpLabels.computeIfAbsent(insn.getOffset() + 2 + arg * 2, k -> new Label());
     }
 
     private static String safeName(String name) {
@@ -482,6 +579,15 @@ public class PythonToJavaCompiler {
 
     private static String genericDescriptor(int nargs) {
         return "(" + ("L" + C_PYOBJECT + ";").repeat(nargs) + ")L" + C_PYOBJECT + ";";
+    }
+
+    private static void pushNone(MethodVisitor mv) {
+        mv.visitFieldInsn(
+            Opcodes.GETSTATIC,
+            "io/github/gaming32/python4j/objects/PyNoneType",
+            "PyNone",
+            "Lio/github/gaming32/python4j/objects/PyNoneType;"
+        );
     }
 
     private static String getLastPathPart(String path) {
