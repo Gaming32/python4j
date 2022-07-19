@@ -20,7 +20,10 @@ public class AppTest {
         System.out.println("Code length: " + code.getCo_code().length());
         System.out.println();
         System.out.println();
-        final byte[] bytes = MarshalWriter.write(code);
+        final MarshalWriter writer = new MarshalWriter();
+        writer.refAllCodeObjects();
+        writer.writeObject(code);
+        final byte[] bytes = writer.getResult();
         final PyCodeObject code2 = (PyCodeObject)new MarshalReader(new ByteArrayInputStream(bytes)).readObject();
         System.out.println(Disassemble.codeInfo(code2));
         System.out.println("Code length: " + code2.getCo_code().length());

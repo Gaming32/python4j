@@ -38,7 +38,12 @@ public final class MarshalWriter {
     private final Map<PyObject, List<Integer>> map;
     private final int version;
     private MarshalWriter delegate;
+    private boolean refAllCodeObjects;
     private int depth;
+
+    public MarshalWriter() {
+        this(VERSION);
+    }
 
     public MarshalWriter(int version) {
         this.version = version;
@@ -181,11 +186,12 @@ public final class MarshalWriter {
         if (idAddress != null) {
             writeByte(TYPE_REF);
             idAddress.add(pos);
-            if (idAddress.size() < 4) {
+            if (idAddress.get(0).intValue() == -1) {
+                idAddress.set(0, 0);
                 reserve(4);
                 int refId = 0;
                 for (final var idAddress2 : map.values()) {
-                    if (idAddress2.size() < 3) continue;
+                    if (idAddress2.get(0).intValue() == -1) continue;
                     for (int i = 2; i < idAddress2.size(); i++) {
                         writeLongAt(refId, idAddress2.get(i));
                     }
@@ -201,6 +207,13 @@ public final class MarshalWriter {
             final List<Integer> entry = new ArrayList<>(2);
             entry.add(-1);
             entry.add(pos);
+            if (refAllCodeObjects && v instanceof PyCodeObject) {
+                int refId = -1;
+                for (final var idAddress2 : map.values()) {
+                    if (idAddress2.get(0).intValue() != -1) refId = idAddress2.get(0);
+                }
+                entry.set(0, refId + 1);
+            }
             map.put(v, entry);
             return false;
         }
@@ -325,7 +338,7 @@ public final class MarshalWriter {
         } else if (obj instanceof PyCodeObject) {
             final PyCodeObject co = (PyCodeObject)obj;
             final PyBytes co_code = co.getCo_code();
-            writeByte(TYPE_CODE);
+            writeByte(TYPE_CODE | (refAllCodeObjects && version >= 3 ? FLAG_REF : 0));
             writeLong(co.getCo_argcount());
             writeLong(co.getCo_posonlyargcount());
             writeLong(co.getCo_kwonlyargcount());
@@ -358,6 +371,15 @@ public final class MarshalWriter {
         }
         pos = 0;
         map.clear();
+    }
+
+    public int getRefId(PyObject obj) {
+        final var entry = map.get(obj);
+        return entry != null ? entry.get(0) : -1;
+    }
+
+    public void refAllCodeObjects() {
+        refAllCodeObjects = true;
     }
 
     private MarshalWriter getDelegate() {
