@@ -38,7 +38,7 @@ public class PyFrame {
         return STACK.peek();
     }
 
-    private static MarshalReader getCachedCode(Class<?> clazz) {
+    public static MarshalReader getCachedCode(Class<?> clazz) {
         return CODE_CACHE.computeIfAbsent(clazz, key -> {
             final byte[] input = key.getAnnotation(PyClassInfo.class).codeObj().getBytes(StandardCharsets.ISO_8859_1);
             final MarshalReader reader = new MarshalReader(new ByteArrayInputStream(input));

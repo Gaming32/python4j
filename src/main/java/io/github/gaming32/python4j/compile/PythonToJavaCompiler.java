@@ -21,6 +21,7 @@ import io.github.gaming32.python4j.bytecode.Disassemble;
 import io.github.gaming32.python4j.bytecode.Disassemble.Instruction;
 import io.github.gaming32.python4j.bytecode.Opcode;
 import io.github.gaming32.python4j.objects.PyCodeObject;
+import io.github.gaming32.python4j.objects.PyNoneType;
 import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.pycfile.MarshalWriter;
 import io.github.gaming32.python4j.pycfile.PycFile;
@@ -46,6 +47,7 @@ public class PythonToJavaCompiler {
     private final MarshalWriter rootWriter = new MarshalWriter();
     private final MarshalWriter reusableWriter = new MarshalWriter();
     private final Map<Map.Entry<ExtraGenerateKind, Integer>, String> extraGenerate = new HashMap<>();
+    private final Map<PyObject, ConstantDynamic> constantRefs = new HashMap<>();
     private int depth;
 
     public PythonToJavaCompiler(String moduleName, PycFile pycFile) {
@@ -250,20 +252,36 @@ public class PythonToJavaCompiler {
                     meth.pop();
                     break;
 
-                case Opcode.LOAD_CONST:
-                    meth.cconst(new ConstantDynamic(
-                        "$const$" + methodName + "$" + arg,
-                        "L" + C_PYOBJECT + ";",
-                        new Handle(
-                            Opcodes.H_INVOKESTATIC,
-                            C_CONDYBOOTSTRAPS,
-                            "constant",
-                            "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/Class;I)L" + C_PYOBJECT + ";",
-                            false
-                        ),
-                        arg
-                    ));
+                case Opcode.LOAD_CONST: {
+                    final PyObject constant = codeObj.getCo_consts().getItem(arg);
+                    if (constant == PyNoneType.PyNone) {
+                        mv.visitFieldInsn(
+                            Opcodes.GETSTATIC,
+                            "io/github/gaming32/python4j/objects/PyNoneType",
+                            "PyNone",
+                            "Lio/github/gaming32/python4j/objects/PyNoneType;"
+                        );
+                    } else {
+                        ConstantDynamic condy = constantRefs.get(constant);
+                        if (condy == null) {
+                            condy = new ConstantDynamic(
+                                "$const$" + constantRefs.size(),
+                                "L" + C_PYOBJECT + ";",
+                                new Handle(
+                                    Opcodes.H_INVOKESTATIC,
+                                    C_CONDYBOOTSTRAPS,
+                                    "constant",
+                                    "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/Class;II)L" + C_PYOBJECT + ";",
+                                    false
+                                ),
+                                refId, arg
+                            );
+                            constantRefs.put(constant, condy);
+                        }
+                        meth.cconst(condy);
+                    }
                     break;
+                }
 
                 case Opcode.BUILD_TUPLE:
                     invokeRuntime(meth, "buildTuple", genericDescriptor(arg));
@@ -400,7 +418,7 @@ public class PythonToJavaCompiler {
         mv.visitJumpInsn(Opcodes.IF_ACMPEQ, successLabel);
         mv.visitTypeInsn(Opcodes.NEW, "java/lang/AssertionError");
         mv.visitInsn(Opcodes.DUP);
-        mv.visitLdcInsn("Top-level module bytecode did not return None.");
+        mv.visitLdcInsn("Top-level module code did not return None.");
         mv.visitMethodInsn(
             Opcodes.INVOKESPECIAL,
             "java/lang/AssertionError",
