@@ -1,5 +1,7 @@
 package io.github.gaming32.python4j.pycfile;
 
+import static io.github.gaming32.python4j.pycfile.MarshalConstants.*;
+
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,44 +28,6 @@ import io.github.gaming32.python4j.objects.PyTuple;
 import io.github.gaming32.python4j.objects.PyUnicode;
 
 public class MarshalReader extends FilterInputStream {
-    private static final int MAX_STACK_DEPTH = 1000;
-
-    private static final int TYPE_NULL             = '0';
-    private static final int TYPE_NONE             = 'N';
-    private static final int TYPE_FALSE            = 'F';
-    private static final int TYPE_TRUE             = 'T';
-    private static final int TYPE_STOPITER         = 'S';
-    private static final int TYPE_ELLIPSIS         = '.';
-    private static final int TYPE_INT              = 'i';
-    /**
-     * TYPE_INT64 is not generated anymore.
-     * Supported for backward compatibility only.
-     */
-    private static final int TYPE_INT64            = 'I';
-    private static final int TYPE_FLOAT            = 'f';
-    private static final int TYPE_BINARY_FLOAT     = 'g';
-    private static final int TYPE_COMPLEX          = 'x';
-    private static final int TYPE_BINARY_COMPLEX   = 'y';
-    private static final int TYPE_LONG             = 'l';
-    private static final int TYPE_STRING           = 's';
-    private static final int TYPE_INTERNED         = 't';
-    private static final int TYPE_REF              = 'r';
-    private static final int TYPE_TUPLE            = '(';
-    private static final int TYPE_LIST             = '[';
-    private static final int TYPE_DICT             = '{';
-    private static final int TYPE_CODE             = 'c';
-    private static final int TYPE_UNICODE          = 'u';
-    private static final int TYPE_UNKNOWN          = '?';
-    private static final int TYPE_SET              = '<';
-    private static final int TYPE_FROZENSET        = '>';
-    private static final int FLAG_REF = 0x80;
-
-    private static final int TYPE_ASCII            = 'a';
-    private static final int TYPE_ASCII_INTERNED   = 'A';
-    private static final int TYPE_SMALL_TUPLE      = ')';
-    private static final int TYPE_SHORT_ASCII      = 'z';
-    private static final int TYPE_SHORT_ASCII_INTERNED = 'Z';
-
     private int depth = 0;
     private List<PyObject> refs = new ArrayList<>();
 
@@ -76,7 +40,8 @@ public class MarshalReader extends FilterInputStream {
     }
 
     public void readFully(byte[] b, int off, int len) throws IOException {
-        if (in.read(b, off, len) != len) {
+        final int read = in.read(b, off, len);
+        if (read != len && !(read == -1 && len == 0)) {
             throw new MarshalException("marshal data too short");
         }
     }
@@ -108,11 +73,6 @@ public class MarshalReader extends FilterInputStream {
         readFully(b);
         return PyObjectAccess.getInstance().pyLongFromByteArray(b, 8, true, true);
     }
-
-    private static final int PyLong_MARSHAL_SHIFT = 15;
-    private static final int PyLong_MARSHAL_BASE = 1 << PyLong_MARSHAL_SHIFT;
-    private static final int PyLong_MARSHAL_MASK = PyLong_MARSHAL_BASE - 1;
-    private static final int PyLong_MARSHAL_RATIO = PyObjectAccess.PyLong_SHIFT / PyLong_MARSHAL_SHIFT;
 
     public PyLong readPyLong() throws IOException {
         int n = readLong();

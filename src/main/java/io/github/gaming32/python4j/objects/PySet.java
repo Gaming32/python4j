@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class PySet extends PyObject {
+public class PySet extends PyObject implements Iterable<PyObject> {
     final Set<PyObject> elements; // TODO: reimplement without Java collections
 
     PySet() {
@@ -17,6 +17,15 @@ public class PySet extends PyObject {
 
     public void add(PyObject item) {
         elements.add(item);
+    }
+
+    public int length() {
+        return elements.size();
+    }
+
+    @Override
+    public Iterator<PyObject> iterator() {
+        return elements.iterator();
     }
 
     @Override

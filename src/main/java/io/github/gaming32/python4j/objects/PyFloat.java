@@ -12,59 +12,33 @@ public class PyFloat extends PyObject {
     }
 
     public static double unpack8(byte[] data, boolean le) {
-        int p = 0;
-        int incr = 1;
-        if (le) {
-            p += 7;
-            incr = -1;
+        long bits = 0;
+        int pos = le ? 7 : 0;
+        final int incr = le ? -1 : 1;
+
+        for (int i = 0; i < 8; i++) {
+            bits <<= 8;
+            bits |= data[pos] & 0xff;
+            pos += incr;
         }
 
-        int sign = ((data[p] & 0xff) >> 7) & 1;
-        int e = ((data[p] & 0xff) & 0x7f) << 4;
+        return Double.longBitsToDouble(bits);
+    }
 
-        p += incr;
+    public static void pack8(double x, byte[] data, boolean le) {
+        long bits = Double.doubleToRawLongBits(x);
+        int pos = le ? 0 : 7;
+        final int incr = le ? 1 : -1;
 
-        e |= ((data[p] & 0xff) >> 4) & 0xf;
-        int fhi = ((data[p] & 0xff) & 0xf) << 24;
-        p += incr;
-
-        if (e == 2047) {
-            if (fhi != 0) {
-                return sign == 0 ? Double.NaN : -Double.NaN;
-            } else {
-                return sign == 0 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
-            }
+        for (int i = 0; i < 8; i++) {
+            data[pos] = (byte)(bits & 0xff);
+            bits >>>= 8;
+            pos += incr;
         }
+    }
 
-        fhi |= (data[p] & 0xff) << 16;
-        p += incr;
-
-        fhi |= (data[p] & 0xff) << 8;
-        p += incr;
-
-        fhi |= data[p] & 0xff;
-        p += incr;
-
-        int flo = (data[p] & 0xff) << 16;
-        p += incr;
-
-        flo |= (data[p] & 0xff) << 8;
-        p += incr;
-
-        flo |= data[p] & 0xff;
-
-        double x = fhi + flo / 16777216.0;
-        x /= 268435456.0;
-
-        if (e == 0) {
-            e = -1022;
-        } else {
-            x += 1.0;
-            e -= 1023;
-        }
-        x = x * Math.pow(2.0, e);
-
-        return sign == 0 ? x : -x;
+    public double getValue() {
+        return fval;
     }
 
     @Override

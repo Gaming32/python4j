@@ -16,4 +16,10 @@ public class PyFrozenSet extends PySet {
     public boolean __bool__() {
         return !elements.isEmpty();
     }
+
+    @Override
+    public long __hash__() {
+        // TODO Auto-generated method stub
+        return super.__hash__();
+    }
 }

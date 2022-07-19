@@ -81,4 +81,30 @@ public class PyTuple extends PyObject implements Iterable<PyObject> {
     public boolean __bool__() {
         return elements.length > 0;
     }
+
+    private static final long XXPRIME_1 = -7046029288634856825L;
+    private static final long XXPRIME_2 = -4417276706812531889L;
+    private static final long XXPRIME_5 = 2870177450012600261L;
+
+    private long xxRotate(long x) {
+        return (x << 31L) | (x >>> 33L);
+    }
+
+    @Override
+    public long __hash__() {
+        long acc = XXPRIME_5;
+        for (int i = 0; i < elements.length; i++) {
+            long lane = elements[i].__hash__();
+            acc += lane * XXPRIME_2;
+            acc = xxRotate(acc);
+            acc *= XXPRIME_1;
+        }
+
+        acc += (long)elements.length ^ (XXPRIME_5 ^ 3527539L);
+
+        if (acc == -1L) {
+            return 1546275796L;
+        }
+        return acc;
+    }
 }

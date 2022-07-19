@@ -204,6 +204,47 @@ public class PyLong extends PyVarObject {
         return result.normalize().maybeSmall();
     }
 
+    public int[] asLongAndOverflow() {
+        int res = -1;
+
+        int i = size;
+        int overflow = 0;
+        switch (i) {
+            case -1:
+                res = -digits[0];
+                break;
+            case 0:
+                res = 0;
+                break;
+            case 1:
+                res = digits[0];
+                break;
+            default:
+                int sign = 1;
+                int x = 0;
+                if (i < 0) {
+                    sign = -1;
+                    i = -i;
+                }
+                while (--i >= 0) {
+                    int prev = x;
+                    x = x << SHIFT | digits[i];
+                    if ((x >> SHIFT) != prev) {
+                        res = -1;
+                        return new int[] {res, overflow};
+                    }
+                }
+                if (x <= Integer.MAX_VALUE) {
+                    res = x * sign;
+                } else if (sign < 0 && x == -Integer.MIN_VALUE) {
+                    res = Integer.MIN_VALUE;
+                } else {
+                    overflow = sign;
+                }
+        }
+        return new int[] {res, overflow};
+    }
+
     private PyLong normalize() {
         int j = Math.abs(size);
         int i = j;

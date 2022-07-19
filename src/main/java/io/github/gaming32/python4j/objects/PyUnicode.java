@@ -1,8 +1,9 @@
 package io.github.gaming32.python4j.objects;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+
+import io.github.gaming32.python4j.CharType;
 
 public class PyUnicode extends PyObject {
     private static final class GlobalStrings {
@@ -172,6 +173,60 @@ public class PyUnicode extends PyObject {
 
     public int getFlags() {
         return kindAndFlags;
+    }
+
+    public boolean isAscii() {
+        return (kindAndFlags & FLAG_ASCII) != 0;
+    }
+
+    public byte[] getLatin1() {
+        if (getKind() != KIND_1BYTE) {
+            throw new IllegalArgumentException("Can only call getLatin1() on latin-1 compatible PyUnicode");
+        }
+        return data.clone();
+    }
+
+    public byte[] asEncodedString(String encoding, String errors) {
+        if (encoding == null) {
+            return asUtf8String(errors);
+        }
+
+        final String normalized = normalizeEncoding(encoding);
+        if (normalized.startsWith("utf")) {
+            final int i = normalized.charAt(3) == '_' ? 4 : 3;
+            if (normalized.length() == i + 1 && normalized.charAt(i) == '8') {
+                return asUtf8String(errors);
+            }
+        }
+
+        throw new IllegalArgumentException("Unsupported encoding: " + encoding);
+    }
+
+    private byte[] asUtf8String(String errors) {
+        if (isAscii()) {
+            return getLatin1();
+        }
+
+        throw new IllegalArgumentException("Don't support encoding non-ascii PyUnicode yet");
+    }
+
+    private static String normalizeEncoding(String encoding) {
+        final StringBuilder result = new StringBuilder(encoding.length());
+        boolean punct = false;
+        for (int i = 0; i < encoding.length(); i++) {
+            final char c = encoding.charAt(i);
+            if (CharType.isAlnum(c) || c == '.') {
+                if (punct && result.length() > 0) {
+                    result.append('_');
+                }
+                punct = false;
+
+                result.append((char)CharType.toLower(c));
+            } else {
+                punct = true;
+            }
+        }
+        return result.toString();
     }
 
     public static PyUnicode fromSizeAndMax(int size, int maxChar) {

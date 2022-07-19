@@ -1,5 +1,6 @@
 package io.github.gaming32.python4j.objects;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -16,6 +17,14 @@ public class PyDict extends PyObject {
 
     public void setItem(PyObject key, PyObject value) {
         elements.put(key, value);
+    }
+
+    public PyObject getItem(PyObject key) {
+        return elements.get(key);
+    }
+
+    public Map<PyObject, PyObject> getElements() {
+        return Collections.unmodifiableMap(elements);
     }
 
     @Override

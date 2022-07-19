@@ -21,6 +21,14 @@ public class PyList extends PyObject {
         elements.set(index, item);
     }
 
+    public PyObject getItem(int index) {
+        return elements.get(index);
+    }
+
+    public int length() {
+        return elements.size();
+    }
+
     @Override
     public String __repr__() {
         StringBuilder sb = new StringBuilder("[");

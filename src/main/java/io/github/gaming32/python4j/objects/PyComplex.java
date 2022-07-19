@@ -13,6 +13,14 @@ public class PyComplex extends PyObject {
         return new PyComplex(real, imag);
     }
 
+    public double getReal() {
+        return real;
+    }
+
+    public double getImag() {
+        return imag;
+    }
+
     @Override
     public String __repr__() {
         return "(" + real + "+" + imag + "j)";
