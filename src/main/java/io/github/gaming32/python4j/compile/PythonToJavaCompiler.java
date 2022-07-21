@@ -32,6 +32,7 @@ public class PythonToJavaCompiler {
     }
 
     private static final Pattern SAFE_NAME_REGEX = Pattern.compile("[.;\\[\\/<>]");
+    private static final String[] GENERIC_DESCRIPTOR_CACHE = new String[256];
     static final String C_PYOBJECT = "io/github/gaming32/python4j/objects/PyObject";
     static final String C_PYCLASSINFO = "io/github/gaming32/python4j/runtime/annotation/PyClassInfo";
     static final String C_PYMETHODINFO = "io/github/gaming32/python4j/runtime/annotation/PyMethodInfo";
@@ -335,8 +336,61 @@ public class PythonToJavaCompiler {
                     }
                     break;
 
+                case Opcode.LIST_TO_TUPLE:
+                    invokeRuntime(meth, "listToTuple", genericDescriptor(2));
+                    break;
+
+                case Opcode.LIST_EXTEND:
+                    if (arg != 1) {
+                        throw new IllegalArgumentException("LIST_EXTEND only supports argument of 1");
+                    }
+                    invokeRuntime(meth, "listExtend", genericDescriptor(2));
+                    break;
+
+                case Opcode.SET_UPDATE:
+                    if (arg != 1) {
+                        throw new IllegalArgumentException("SET_UPDATE only supports argument of 1");
+                    }
+                    invokeRuntime(meth, "setUpdate", genericDescriptor(2));
+                    break;
+
+                case Opcode.DICT_UPDATE:
+                    if (arg != 1) {
+                        throw new IllegalArgumentException("DICT_UPDATE only supports argument of 1");
+                    }
+                    invokeRuntime(meth, "dictUpdate", genericDescriptor(2));
+                    break;
+
+                case Opcode.DICT_MERGE:
+                    if (arg != 1) {
+                        throw new IllegalArgumentException("DICT_MERGE only supports argument of 1");
+                    }
+                    invokeRuntime(meth, "dictMerge", genericDescriptor(2));
+                    break;
+
+                case Opcode.LIST_APPEND:
+                    if (arg != 1) {
+                        throw new IllegalArgumentException("LIST_APPEND only supports argument of 1");
+                    }
+                    invokeRuntime(meth, "listAppend", genericDescriptor(2));
+                    break;
+
+                case Opcode.SET_ADD:
+                    if (arg != 1) {
+                        throw new IllegalArgumentException("SET_ADD only supports argument of 1");
+                    }
+                    invokeRuntime(meth, "setAdd", genericDescriptor(2));
+                    break;
+
+                case Opcode.MAP_ADD:
+                    if (arg != 2) {
+                        throw new IllegalArgumentException("MAP_ADD only supports argument of 2");
+                    }
+                    invokeRuntime(meth, "mapAdd", genericDescriptor(3));
+                    break;
+
                 case Opcode.IS_OP:
-                    invokeRuntime(meth, arg != 1 ? "is" : "isNot", "(L" + C_PYOBJECT + ";L" + C_PYOBJECT + ";)L" + C_PYOBJECT + ";");
+                    invokeRuntime(meth, arg != 1 ? "is" : "isNot", genericDescriptor(2));
                     break;
 
                 case Opcode.JUMP_FORWARD:
@@ -578,7 +632,10 @@ public class PythonToJavaCompiler {
     }
 
     private static String genericDescriptor(int nargs) {
-        return "(" + ("L" + C_PYOBJECT + ";").repeat(nargs) + ")L" + C_PYOBJECT + ";";
+        if (GENERIC_DESCRIPTOR_CACHE[nargs] == null) {
+            return GENERIC_DESCRIPTOR_CACHE[nargs] = "(" + ("L" + C_PYOBJECT + ";").repeat(nargs) + ")L" + C_PYOBJECT + ";";
+        }
+        return GENERIC_DESCRIPTOR_CACHE[nargs];
     }
 
     private static void pushNone(MethodVisitor mv) {

@@ -1,9 +1,10 @@
 package io.github.gaming32.python4j.objects;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-public class PyList extends PyObject {
+public class PyList extends PyObject implements SupportsToArray {
     private final List<PyObject> elements; // TODO: reimplement without Java collections
 
     private PyList(int size) {
@@ -31,6 +32,21 @@ public class PyList extends PyObject {
 
     public PyObject[] toArray() {
         return elements.toArray(PyObject[]::new);
+    }
+
+    public void extend(PyObject sequence) {
+        if (!(sequence instanceof SupportsToArray)) {
+            throw new IllegalArgumentException("Sequence must implement toArray()");
+        }
+        if (sequence instanceof PyList) {
+            elements.addAll(((PyList)sequence).elements);
+        } else {
+            Collections.addAll(elements, ((SupportsToArray)sequence).toArray());
+        }
+    }
+
+    public void append(PyObject item) {
+        elements.add(item);
     }
 
     @Override

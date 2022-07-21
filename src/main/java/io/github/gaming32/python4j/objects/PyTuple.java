@@ -3,7 +3,7 @@ package io.github.gaming32.python4j.objects;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class PyTuple extends PyObject implements Iterable<PyObject> {
+public class PyTuple extends PyObject implements Iterable<PyObject>, SupportsToArray {
     private static final PyTuple EMPTY = new PyTuple(new PyObject[0]);
 
     private final PyObject[] elements;
@@ -60,6 +60,10 @@ public class PyTuple extends PyObject implements Iterable<PyObject> {
                 }
             }
         };
+    }
+
+    public PyObject[] toArray() {
+        return elements.clone();
     }
 
     @Override

@@ -1,10 +1,11 @@
 package io.github.gaming32.python4j.objects;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class PySet extends PyObject implements Iterable<PyObject> {
+public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArray {
     final Set<PyObject> elements; // TODO: reimplement without Java collections
 
     PySet() {
@@ -45,5 +46,21 @@ public class PySet extends PyObject implements Iterable<PyObject> {
     @Override
     public boolean __bool__() {
         return !elements.isEmpty();
+    }
+
+    @Override
+    public PyObject[] toArray() {
+        return elements.toArray(PyObject[]::new);
+    }
+
+    public void update(PyObject sequence) {
+        if (!(sequence instanceof SupportsToArray)) {
+            throw new IllegalArgumentException("Sequence must implement toArray()");
+        }
+        if (sequence instanceof PySet) {
+            elements.addAll(((PySet)sequence).elements);
+        } else {
+            Collections.addAll(elements, ((SupportsToArray)sequence).toArray());
+        }
     }
 }

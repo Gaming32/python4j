@@ -1,3 +1,4 @@
-a = 123
-(b := 'hello world')
-c = (123, 'abc')
+{
+    'hello': 'world',
+    123: 456,
+}

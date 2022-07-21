@@ -62,6 +62,41 @@ public final class PyRuntime {
         return PyTuple.fromElements(((PyList)list).toArray());
     }
 
+    public static PyObject listExtend(PyObject list, PyObject sequence) {
+        ((PyList)list).extend(sequence);
+        return list;
+    }
+
+    public static PyObject setUpdate(PyObject set, PyObject sequence) {
+        ((PySet)set).update(sequence);
+        return set;
+    }
+
+    public static PyObject dictUpdate(PyObject dict, PyObject with) {
+        ((PyDict)dict).update(with);
+        return dict;
+    }
+
+    public static PyObject dictMerge(PyObject dict, PyObject with) {
+        ((PyDict)dict).update(with);
+        return dict;
+    }
+
+    public static PyObject setAdd(PyObject set, PyObject value) {
+        ((PySet)set).add(value);
+        return set;
+    }
+
+    public static PyObject listAppend(PyObject list, PyObject value) {
+        ((PyList)list).append(value);
+        return list;
+    }
+
+    public static PyObject mapAdd(PyObject dict, PyObject key, PyObject value) {
+        ((PyDict)dict).setItem(key, value);
+        return dict;
+    }
+
     public static PyObject is(PyObject a, PyObject b) {
         return PyBool.fromBoolean(a == b);
     }

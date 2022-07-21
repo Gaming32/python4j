@@ -103,8 +103,8 @@ public class PyLong extends PyVarObject {
 
     @Override
     public long __hash__() {
-        int i = getSize();
-        switch (size) {
+        int i = size;
+        switch (i) {
             case -1: return digits[0] == 1 ? -1 : -digits[0];
             case 0: return 0;
             case 1: return digits[0];
