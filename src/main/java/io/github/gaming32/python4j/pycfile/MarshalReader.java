@@ -190,7 +190,7 @@ public class MarshalReader extends FilterInputStream {
                 break;
 
             case TYPE_STOPITER:
-                result = new PyStopIteration();
+                result = PyStopIteration.INSTANCE;
                 break;
 
             case TYPE_ELLIPSIS:

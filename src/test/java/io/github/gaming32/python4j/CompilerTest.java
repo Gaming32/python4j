@@ -11,6 +11,7 @@ import org.objectweb.asm.util.CheckClassAdapter;
 
 import io.github.gaming32.python4j.bytecode.Disassemble;
 import io.github.gaming32.python4j.compile.PythonToJavaCompiler;
+import io.github.gaming32.python4j.objects.PyWrappedException;
 import io.github.gaming32.python4j.pycfile.PycFile;
 
 public class CompilerTest {
@@ -38,7 +39,11 @@ public class CompilerTest {
                 .getMethod("main", String[].class)
                 .invoke(null, new Object[] {args});
         } catch (InvocationTargetException e) {
-            throw e.getCause();
+            if (e.getCause() instanceof PyWrappedException) {
+                System.err.println(((PyWrappedException)e.getCause()).getPythonTraceback());
+            } else {
+                throw e.getCause();
+            }
         }
     }
 }

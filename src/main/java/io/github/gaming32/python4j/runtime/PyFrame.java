@@ -15,6 +15,7 @@ import io.github.gaming32.python4j.pycfile.MarshalReader;
 import io.github.gaming32.python4j.runtime.annotation.PyClassInfo;
 
 public class PyFrame {
+    public static final Map<String, Class<?>> PYTHON_CLASSES_BY_NAME = new HashMap<>();
     private static final Map<Class<?>, MarshalReader> CODE_CACHE = new HashMap<>();
     private static final ArrayDeque<PyFrame> STACK = new ArrayDeque<>();
 
@@ -39,8 +40,12 @@ public class PyFrame {
     }
 
     public static MarshalReader getCachedCode(Class<?> clazz) {
+        if (clazz == null) return null;
         return CODE_CACHE.computeIfAbsent(clazz, key -> {
-            final byte[] input = key.getAnnotation(PyClassInfo.class).codeObj().getBytes(StandardCharsets.ISO_8859_1);
+            final PyClassInfo anno = key.getAnnotation(PyClassInfo.class);
+            if (anno == null) return null;
+            PYTHON_CLASSES_BY_NAME.put(key.getName(), key);
+            final byte[] input = anno.codeObj().getBytes(StandardCharsets.ISO_8859_1);
             final MarshalReader reader = new MarshalReader(new ByteArrayInputStream(input));
             try {
                 reader.readObject();
