@@ -19,7 +19,7 @@ public class PyObject {
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         return Long.hashCode(__hash__());
     }
 

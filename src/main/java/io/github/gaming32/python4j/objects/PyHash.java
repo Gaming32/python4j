@@ -38,6 +38,12 @@ public final class PyHash {
         }
     }
 
+    public static final int MULTIPLIER = 1000003; /* 0xf4243 */
+    public static final int BITS = 61;
+    public static final long MODULUS = (1L << BITS) - 1;
+    public static final int INF = 314159;
+    public static final int IMAG = MULTIPLIER;
+
     private static final OptionalLong HASH_SEED_FROM_PROPERTIES;
     private static final Unsafe UNSAFE = UnsafeUtil.getUnsafe();
     private static long[] hashSecret = null;

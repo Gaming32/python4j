@@ -243,7 +243,7 @@ public class PythonToJavaCompiler {
 
                 case Opcode.STORE_NAME:
                     if (depth > 1) {
-                        break;
+                        throw new IllegalArgumentException("Cannot STORE_NAME from function yet");
                     }
                 case Opcode.STORE_GLOBAL:
                     getGlobals(meth);
@@ -253,7 +253,7 @@ public class PythonToJavaCompiler {
 
                 case Opcode.DELETE_NAME:
                     if (depth > 1) {
-                        break;
+                        throw new IllegalArgumentException("Cannot DELETE_NAME from function yet");
                     }
                 case Opcode.DELETE_GLOBAL:
                     getGlobals(meth);
@@ -434,7 +434,7 @@ public class PythonToJavaCompiler {
 
                 case Opcode.LOAD_NAME:
                     if (depth > 1) {
-                        break;
+                        throw new IllegalArgumentException("Cannot LOAD_NAME from function yet");
                     }
                 case Opcode.LOAD_GLOBAL:
                     if ((arg & 1) != 0) {

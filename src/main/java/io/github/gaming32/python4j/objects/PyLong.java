@@ -101,6 +101,31 @@ public class PyLong extends PyVarObject {
         return digits.length != 1 || digits[0] != 0;
     }
 
+    @Override
+    public long __hash__() {
+        int i = getSize();
+        switch (size) {
+            case -1: return digits[0] == 1 ? -1 : -digits[0];
+            case 0: return 0;
+            case 1: return digits[0];
+        }
+        int sign = 1;
+        long x = 0;
+        if (i < 0) {
+            sign = -1;
+            i = -i;
+        }
+        while (--i >= 0) {
+            x = ((x << SHIFT) & PyHash.MODULUS) | (x >> (PyHash.BITS - SHIFT));
+            x += digits[i];
+            if (x >= PyHash.MODULUS) {
+                x -= PyHash.MODULUS;
+            }
+        }
+        x = x * sign;
+        return x == -1 ? -2 : x;
+    }
+
     private static boolean isSmallInt(int ival) {
         return -N_SMALL_NEG_INTS <= ival && ival <= N_SMALL_POS_INTS;
     }
@@ -151,7 +176,6 @@ public class PyLong extends PyVarObject {
         int numSignificantBytes;
         {
             int p = pendbyte;
-            int pincr = -incr;
             int insignificant = isSigned ? 0xff : 0x00;
 
             int i;
