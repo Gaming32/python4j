@@ -1,4 +1,6 @@
-def test(name: 'str', *, sep: 'str' = '\n') -> None:
-    print('Hello,', name, sep=sep)
+def a() -> 'str':
+    def b() -> 'str':
+        return 'hi'
+    return b()
 
-test('Bob', sep=' ')
+print(a())

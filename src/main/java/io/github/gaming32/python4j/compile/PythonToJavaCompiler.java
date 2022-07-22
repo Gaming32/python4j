@@ -485,11 +485,11 @@ public class PythonToJavaCompiler {
                         throw new IllegalArgumentException("Cannot LOAD_NAME from function yet");
                     }
                 case Opcode.LOAD_GLOBAL:
-                    if ((arg & 1) != 0) {
+                    if ((arg & 1) != 0 && insn.getOpcode() == Opcode.LOAD_GLOBAL) {
                         meth.aconst(null);
                     }
                     getGlobals(meth);
-                    meth.aconst(codeObj.getCo_names().getItem(arg >> 1).toString());
+                    meth.aconst(codeObj.getCo_names().getItem(insn.getOpcode() == Opcode.LOAD_GLOBAL ? arg >> 1 : arg).toString());
                     invokeRuntime(meth, "loadGlobal", "(Ljava/util/Map;Ljava/lang/String;)L" + C_PYOBJECT + ";");
                     break;
 
