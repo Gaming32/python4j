@@ -27,8 +27,10 @@ public class PyFrame {
         locals = new PyObject[codeObj.getCo_nlocals()];
     }
 
-    public static void push(Class<?> clazz, int codeIndex) {
+    public static PyObject[] push(Class<?> clazz, int codeIndex, PyObject[] args) {
         STACK.push(new PyFrame((PyCodeObject)getCachedCode(clazz).getRef(codeIndex)));
+        System.arraycopy(args, 0, STACK.peek().locals, 0, args.length);
+        return args;
     }
 
     public static void pop() {

@@ -1,10 +1,13 @@
 package io.github.gaming32.python4j.runtime;
 
 import java.util.Map;
+import java.util.function.Function;
 
 import io.github.gaming32.python4j.objects.PyBool;
+import io.github.gaming32.python4j.objects.PyCodeObject;
 import io.github.gaming32.python4j.objects.PyDict;
 import io.github.gaming32.python4j.objects.PyException;
+import io.github.gaming32.python4j.objects.PyFunctionObject;
 import io.github.gaming32.python4j.objects.PyList;
 import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.objects.PySet;
@@ -146,6 +149,10 @@ public final class PyRuntime {
             return o2.__call__(new PyArguments(kwNames, o3));
         }
         throw new UnsupportedOperationException("Methods not implemented yet");
+    }
+
+    public static PyObject makeFunction(PyObject code, Function<PyObject[], PyObject> actualFunction) {
+        return new PyFunctionObject((PyCodeObject)code, actualFunction);
     }
 
     // region GENERATED CODE (see generate_large_runtime_handlers.py)

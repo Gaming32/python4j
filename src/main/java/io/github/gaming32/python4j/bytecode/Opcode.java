@@ -32,6 +32,11 @@ public final class Opcode {
     public static final int CO_ITERABLE_COROUTINE = 256;
     public static final int CO_ASYNC_GENERATOR = 512;
 
+    public static final int MKFN_DEFAULTS = 1;
+    public static final int MKFN_KWDEFAULTS = 2;
+    public static final int MKFN_ANNOTATIONS = 4;
+    public static final int MKFN_CLOSURE = 8;
+
     // region GENERATED CODE (see generate_opcode_fields.py)
     public static final int CACHE = 0;
     public static final int POP_TOP = 1;

@@ -3,6 +3,7 @@ package io.github.gaming32.python4j.compile;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -41,6 +42,7 @@ public class PythonToJavaCompiler {
     static final String C_CONDYBOOTSTRAPS = "io/github/gaming32/python4j/runtime/invoke/CondyBootstraps";
     static final String C_PYFRAME = "io/github/gaming32/python4j/runtime/PyFrame";
     static final String C_PYOPERATOR = "io/github/gaming32/python4j/runtime/modules/PyOperator";
+    private static final String METHOD_DESCRIPTOR = "([L" + C_PYOBJECT + ";)L" + C_PYOBJECT + ";";
 
     private final String moduleName;
     private final PycFile pycFile;
@@ -51,6 +53,7 @@ public class PythonToJavaCompiler {
     private final MarshalWriter reusableWriter = new MarshalWriter();
     private final Map<Map.Entry<ExtraGenerateKind, Integer>, String> extraGenerate = new HashMap<>();
     private final Map<PyObject, ConstantDynamic> constantRefs = new HashMap<>();
+    private final Map<PyCodeObject, String> methodNames = new IdentityHashMap<>();
     private int depth;
 
     public PythonToJavaCompiler(String moduleName, PycFile pycFile) {
@@ -119,10 +122,11 @@ public class PythonToJavaCompiler {
             }
         }
         final String methodName = safeDeduppedName(codeObj.getCo_qualname().toString());
+        methodNames.put(codeObj, methodName);
         final MethodVisitor mv = result.visitMethod(
             Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
             methodName,
-            genericDescriptor(codeObj.getCo_argcount()),
+            METHOD_DESCRIPTOR,
             null, null
         );
         final InstructionAdapter meth = new InstructionAdapter(mv);
@@ -137,23 +141,29 @@ public class PythonToJavaCompiler {
         meth.mark(startLabel);
         meth.aconst(Type.getObjectType(className));
         meth.iconst(refId);
+        meth.visitVarInsn(Opcodes.ALOAD, 0);
         meth.invokestatic(
             C_PYFRAME,
             "push",
-            "(Ljava/lang/Class;I)V",
+            "(Ljava/lang/Class;I[L" + C_PYOBJECT + ";)[L" + C_PYOBJECT + ";",
             false
         );
-        for (int i = 0; i < codeObj.getCo_argcount(); i++) {
-            meth.visitVarInsn(Opcodes.ALOAD, i);
+        if (codeObj.getCo_argcount() == 0) {
+            meth.pop();
+        } else {
+            int i;
+            for (i = 0; i < codeObj.getCo_argcount() - 1; i++) {
+                meth.dup();
+                meth.iconst(i);
+                meth.visitInsn(Opcodes.AALOAD);
+                meth.visitVarInsn(Opcodes.ASTORE, i);
+            }
             meth.iconst(i);
-            meth.invokestatic(
-                C_PYFRAME,
-                "storeFast",
-                "(L" + C_PYOBJECT + ";I)V",
-                false
-            );
+            meth.visitInsn(Opcodes.AALOAD);
+            meth.visitVarInsn(Opcodes.ASTORE, i);
         }
         final Map<Integer, Label> jumpLabels = new HashMap<>();
+        PyCodeObject lastCodeObject = null;
         for (final Instruction insn : Disassemble.getInstructions(codeObj)) {
             Label insnLabel = null;
             if (insn.isJumpTarget()) {
@@ -265,9 +275,13 @@ public class PythonToJavaCompiler {
                     meth.pop();
                     break;
 
-                case Opcode.LOAD_CONST:
-                    loadConst(meth, codeObj, refId, arg);
+                case Opcode.LOAD_CONST: {
+                    final PyObject theConst = loadConst(meth, codeObj, refId, arg);
+                    if (theConst instanceof PyCodeObject) {
+                        lastCodeObject = (PyCodeObject)theConst;
+                    }
                     break;
+                }
 
                 case Opcode.BUILD_TUPLE:
                     invokeRuntime(meth, "buildTuple", genericDescriptor(arg));
@@ -512,6 +526,37 @@ public class PythonToJavaCompiler {
                     break;
                 }
 
+                case Opcode.MAKE_FUNCTION: {
+                    if (arg == 0) {
+                        meth.invokedynamic(
+                            "apply",
+                            "()Ljava/util/function/Function;",
+                            new Handle(
+                                Opcodes.H_INVOKESTATIC,
+                                "java/lang/invoke/LambdaMetafactory",
+                                "metafactory",
+                                "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
+                                false
+                            ),
+                            new Object[] {
+                                Type.getMethodType("(Ljava/lang/Object;)Ljava/lang/Object;"),
+                                new Handle(
+                                    Opcodes.H_INVOKESTATIC,
+                                    className,
+                                    methodNames.get(lastCodeObject),
+                                    METHOD_DESCRIPTOR,
+                                    false
+                                ),
+                                Type.getMethodType(METHOD_DESCRIPTOR)
+                            }
+                        );
+                        invokeRuntime(meth, "makeFunction", "(L" + C_PYOBJECT + ";Ljava/util/function/Function;)L" + C_PYOBJECT + ";");
+                    } else {
+                        throw new IllegalArgumentException("MAKE_FUNCTION flags not supported yet");
+                    }
+                    break;
+                }
+
                 default:
                     throw new IllegalArgumentException("Unsupported opcode: " + Opcode.OP_NAME.get(insn.getOpcode()));
             }
@@ -539,11 +584,13 @@ public class PythonToJavaCompiler {
     private void generateMainMethod(String moduleMethodName) {
         final MethodVisitor mv = result.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
         mv.visitCode();
+        mv.visitInsn(Opcodes.ICONST_0);
+        mv.visitTypeInsn(Opcodes.ANEWARRAY, C_PYOBJECT);
         mv.visitMethodInsn(
             Opcodes.INVOKESTATIC,
             className,
             moduleMethodName, // Probably "_module_0", but you can never be too careful
-            "()L" + C_PYOBJECT + ";",
+            "([L" + C_PYOBJECT + ";)L" + C_PYOBJECT + ";",
             false
         );
         pushNone(mv);
@@ -624,7 +671,7 @@ public class PythonToJavaCompiler {
         return GENERIC_DESCRIPTOR_CACHE[nargs];
     }
 
-    private void loadConst(InstructionAdapter meth, PyCodeObject codeObj, int refId, int constId) {
+    private PyObject loadConst(InstructionAdapter meth, PyCodeObject codeObj, int refId, int constId) {
         final PyObject constant = codeObj.getCo_consts().getItem(constId);
         if (constant == PyNoneType.PyNone) {
             pushNone(meth);
@@ -647,6 +694,7 @@ public class PythonToJavaCompiler {
             }
             meth.cconst(condy);
         }
+        return constant;
     }
 
     private static void pushNone(MethodVisitor mv) {

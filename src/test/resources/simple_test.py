@@ -1,2 +1,4 @@
-print('Hello world!')
-print('Hello', 'world!', sep='\n')
+def test(name):
+    print('Hello,', name)
+
+test('Bob')
