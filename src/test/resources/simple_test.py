@@ -1,4 +1,2 @@
-{
-    'hello': 'world',
-    123: 456,
-}
+print('Hello world!')
+print('Hello', 'world!', sep='\n')

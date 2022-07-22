@@ -11,7 +11,7 @@ import org.objectweb.asm.util.CheckClassAdapter;
 
 import io.github.gaming32.python4j.bytecode.Disassemble;
 import io.github.gaming32.python4j.compile.PythonToJavaCompiler;
-import io.github.gaming32.python4j.objects.PyWrappedException;
+import io.github.gaming32.python4j.objects.WrappedPyException;
 import io.github.gaming32.python4j.pycfile.PycFile;
 
 public class CompilerTest {
@@ -20,6 +20,8 @@ public class CompilerTest {
         try (InputStream is = CompilerTest.class.getResourceAsStream("/simple_test.cpython-311.pyc")) {
             pycFile = PycFile.read(is);
         }
+        System.out.println(Disassemble.codeInfo(pycFile.getCode()));
+        System.out.println();
         Disassemble.disassemble(pycFile.getCode(), System.out);
         System.out.println();
 
@@ -39,8 +41,8 @@ public class CompilerTest {
                 .getMethod("main", String[].class)
                 .invoke(null, new Object[] {args});
         } catch (InvocationTargetException e) {
-            if (e.getCause() instanceof PyWrappedException) {
-                System.err.println(((PyWrappedException)e.getCause()).getPythonTraceback());
+            if (e.getCause() instanceof WrappedPyException) {
+                System.err.println(((WrappedPyException)e.getCause()).getPythonTraceback());
             } else {
                 throw e.getCause();
             }

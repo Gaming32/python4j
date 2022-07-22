@@ -7,10 +7,10 @@ import io.github.gaming32.python4j.pycfile.MarshalReader;
 import io.github.gaming32.python4j.runtime.PyFrame;
 import io.github.gaming32.python4j.runtime.annotation.PyMethodInfo;
 
-public final class PyWrappedException extends RuntimeException {
+public final class WrappedPyException extends RuntimeException {
     private final PyBaseException wrapped;
 
-    public PyWrappedException(PyBaseException wrapped) {
+    public WrappedPyException(PyBaseException wrapped) {
         super(wrapped.__str__());
         this.wrapped = wrapped;
     }

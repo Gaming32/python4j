@@ -1,5 +1,7 @@
 package io.github.gaming32.python4j.objects;
 
+import io.github.gaming32.python4j.runtime.PyArguments;
+
 public class PyObject {
     public String __str__() {
         return __repr__();
@@ -21,6 +23,10 @@ public class PyObject {
     @Override
     public final int hashCode() {
         return Long.hashCode(__hash__());
+    }
+
+    public PyObject __call__(PyArguments args) {
+        throw new UnsupportedOperationException();
     }
 
     public boolean __bool__() {

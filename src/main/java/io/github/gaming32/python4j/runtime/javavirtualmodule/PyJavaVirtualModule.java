@@ -9,10 +9,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import io.github.gaming32.python4j.objects.PyFunctionObject;
 import io.github.gaming32.python4j.objects.PyObject;
+import io.github.gaming32.python4j.runtime.PyArguments;
 import io.github.gaming32.python4j.runtime.PyModule;
 
 public final class PyJavaVirtualModule implements PyModule {
@@ -30,6 +33,12 @@ public final class PyJavaVirtualModule implements PyModule {
         Consumer<PyObject> setter;
         Runnable deleter;
     }
+
+    private static final MethodType FUNCTION_INTERFACE_TYPE = MethodType.methodType(Function.class);
+    private static final MethodType FUNCTION_GENERIC_TYPE = MethodType.methodType(Object.class, Object.class);
+    private static final MethodType FUNCTION_ACTUAL_TYPE = MethodType.methodType(PyObject.class, PyArguments.class);
+
+    private static Map<String, PyModule> virtualModules = null;
 
     private final String name;
     private final Map<String, Object> contents;
@@ -56,8 +65,9 @@ public final class PyJavaVirtualModule implements PyModule {
     }
 
     public static Map<String, PyModule> getVirtualModules() throws IllegalAccessException {
+        if (virtualModules != null) return virtualModules;
         try {
-            return ServiceLoader.load(JavaVirtualModuleMarker.class)
+            return virtualModules = ServiceLoader.load(JavaVirtualModuleMarker.class)
                 .stream()
                 .map(p -> {
                     try {
@@ -82,7 +92,22 @@ public final class PyJavaVirtualModule implements PyModule {
                 if (methodAnno != null) {
                     String name = methodAnno.value();
                     if (name.isEmpty()) name = method.getName();
-                    contents.put(name, lookup.unreflect(method));
+                    try {
+                        contents.put(name, new PyFunctionObject(
+                            (Function<PyArguments, PyObject>)LambdaMetafactory.metafactory(
+                                lookup,
+                                "apply",
+                                FUNCTION_INTERFACE_TYPE,
+                                FUNCTION_GENERIC_TYPE,
+                                lookup.unreflect(method),
+                                FUNCTION_ACTUAL_TYPE
+                            ).getTarget().invokeExact()
+                        ));
+                    } catch (IllegalAccessException e) {
+                        throw e;
+                    } catch (Throwable t) {
+                        throw new Error(t);
+                    }
                 }
             }
             {
@@ -192,7 +217,7 @@ public final class PyJavaVirtualModule implements PyModule {
         if (value instanceof PropertyWrapper) {
             return ((PropertyWrapper)value).getter.get();
         }
-        return null;
+        return (PyObject)value;
     }
 
     @Override

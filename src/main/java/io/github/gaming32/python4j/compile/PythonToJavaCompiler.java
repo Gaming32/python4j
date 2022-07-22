@@ -34,6 +34,7 @@ public class PythonToJavaCompiler {
     private static final Pattern SAFE_NAME_REGEX = Pattern.compile("[.;\\[\\/<>]");
     private static final String[] GENERIC_DESCRIPTOR_CACHE = new String[256];
     static final String C_PYOBJECT = "io/github/gaming32/python4j/objects/PyObject";
+    static final String C_PYTUPLE = "io/github/gaming32/python4j/objects/PyTuple";
     static final String C_PYCLASSINFO = "io/github/gaming32/python4j/runtime/annotation/PyClassInfo";
     static final String C_PYMETHODINFO = "io/github/gaming32/python4j/runtime/annotation/PyMethodInfo";
     static final String C_PYRUNTIME = "io/github/gaming32/python4j/runtime/PyRuntime";
@@ -171,6 +172,7 @@ public class PythonToJavaCompiler {
             switch (insn.getOpcode()) {
                 case Opcode.NOP:
                 case Opcode.RESUME:
+                case Opcode.PRECALL:
                     break;
 
                 case Opcode.POP_TOP:
@@ -263,31 +265,9 @@ public class PythonToJavaCompiler {
                     meth.pop();
                     break;
 
-                case Opcode.LOAD_CONST: {
-                    final PyObject constant = codeObj.getCo_consts().getItem(arg);
-                    if (constant == PyNoneType.PyNone) {
-                        pushNone(mv);
-                    } else {
-                        ConstantDynamic condy = constantRefs.get(constant);
-                        if (condy == null) {
-                            condy = new ConstantDynamic(
-                                "$const$" + constantRefs.size(),
-                                "L" + C_PYOBJECT + ";",
-                                new Handle(
-                                    Opcodes.H_INVOKESTATIC,
-                                    C_CONDYBOOTSTRAPS,
-                                    "constant",
-                                    "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/Class;II)L" + C_PYOBJECT + ";",
-                                    false
-                                ),
-                                refId, arg
-                            );
-                            constantRefs.put(constant, condy);
-                        }
-                        meth.cconst(condy);
-                    }
+                case Opcode.LOAD_CONST:
+                    loadConst(meth, codeObj, refId, arg);
                     break;
-                }
 
                 case Opcode.BUILD_TUPLE:
                     invokeRuntime(meth, "buildTuple", genericDescriptor(arg));
@@ -496,12 +476,7 @@ public class PythonToJavaCompiler {
                     }
                     getGlobals(meth);
                     meth.aconst(codeObj.getCo_names().getItem(arg >> 1).toString());
-                    meth.invokeinterface(
-                        "java/util/Map",
-                        "get",
-                        "(Ljava/lang/Object;)Ljava/lang/Object;"
-                    );
-                    meth.visitTypeInsn(Opcodes.CHECKCAST, C_PYOBJECT);
+                    invokeRuntime(meth, "loadGlobal", "(Ljava/util/Map;Ljava/lang/String;)L" + C_PYOBJECT + ";");
                     break;
 
                 case Opcode.LOAD_FAST:
@@ -525,6 +500,27 @@ public class PythonToJavaCompiler {
                 case Opcode.PUSH_NULL:
                     meth.aconst(null);
                     break;
+
+                case Opcode.KW_NAMES:
+                    loadConst(meth, codeObj, refId, arg);
+                    meth.visitTypeInsn(Opcodes.CHECKCAST, C_PYTUPLE);
+                    meth.putstatic(C_PYRUNTIME, "kwNames", "L" + C_PYTUPLE + ";");
+                    break;
+
+                case Opcode.CALL: {
+                    invokeRuntime(meth, "call", genericDescriptor(arg + 1));
+                    meth.swap();
+                    meth.pop();
+                    // invokeRuntime(meth, "call", "(" + ("L" + C_PYOBJECT + ";").repeat(arg + 2) + ")[L" + C_PYOBJECT + ";");
+                    // copyArrayToStack(meth, 2, codeObj.getCo_nlocals());
+                    // meth.dup();
+                    // meth.getstatic(C_PYRUNTIME, "CALL_DROP", "L" + C_PYOBJECT + ";");
+                    // final Label ifNoDropLabel = new Label();
+                    // meth.ifne(ifNoDropLabel);
+                    // meth.pop();
+                    // meth.mark(ifNoDropLabel);
+                    break;
+                }
 
                 default:
                     throw new IllegalArgumentException("Unsupported opcode: " + Opcode.OP_NAME.get(insn.getOpcode()));
@@ -636,6 +632,31 @@ public class PythonToJavaCompiler {
             return GENERIC_DESCRIPTOR_CACHE[nargs] = "(" + ("L" + C_PYOBJECT + ";").repeat(nargs) + ")L" + C_PYOBJECT + ";";
         }
         return GENERIC_DESCRIPTOR_CACHE[nargs];
+    }
+
+    private void loadConst(InstructionAdapter meth, PyCodeObject codeObj, int refId, int constId) {
+        final PyObject constant = codeObj.getCo_consts().getItem(constId);
+        if (constant == PyNoneType.PyNone) {
+            pushNone(meth);
+        } else {
+            ConstantDynamic condy = constantRefs.get(constant);
+            if (condy == null) {
+                condy = new ConstantDynamic(
+                    "$const$" + constantRefs.size(),
+                    "L" + C_PYOBJECT + ";",
+                    new Handle(
+                        Opcodes.H_INVOKESTATIC,
+                        C_CONDYBOOTSTRAPS,
+                        "constant",
+                        "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/Class;II)L" + C_PYOBJECT + ";",
+                        false
+                    ),
+                    refId, constId
+                );
+                constantRefs.put(constant, condy);
+            }
+            meth.cconst(condy);
+        }
     }
 
     private static void pushNone(MethodVisitor mv) {

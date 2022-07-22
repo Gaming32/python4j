@@ -11,7 +11,10 @@ public interface PyModule {
     void setattr(String name, PyObject value);
     void delattr(String name);
     String[] dir();
-    /* nullable */ String[] all();
+
+    default String[] all() {
+        return null;
+    }
 
     default void importStar(Map<String, PyObject> into) {
         final Map<String, PyObject> result = new LinkedHashMap<>();
