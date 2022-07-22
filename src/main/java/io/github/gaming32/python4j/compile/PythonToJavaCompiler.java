@@ -176,8 +176,8 @@ public class PythonToJavaCompiler {
                     break;
 
                 case Opcode.POP_TOP:
-                    // meth.pop();
-                    // break;
+                    meth.pop();
+                    break;
                 case Opcode.PRINT_EXPR:
                     invokeRuntime(meth, "printExpr", "(L" + C_PYOBJECT + ";)V");
                     break;
@@ -508,17 +508,7 @@ public class PythonToJavaCompiler {
                     break;
 
                 case Opcode.CALL: {
-                    invokeRuntime(meth, "call", genericDescriptor(arg + 1));
-                    meth.swap();
-                    meth.pop();
-                    // invokeRuntime(meth, "call", "(" + ("L" + C_PYOBJECT + ";").repeat(arg + 2) + ")[L" + C_PYOBJECT + ";");
-                    // copyArrayToStack(meth, 2, codeObj.getCo_nlocals());
-                    // meth.dup();
-                    // meth.getstatic(C_PYRUNTIME, "CALL_DROP", "L" + C_PYOBJECT + ";");
-                    // final Label ifNoDropLabel = new Label();
-                    // meth.ifne(ifNoDropLabel);
-                    // meth.pop();
-                    // meth.mark(ifNoDropLabel);
+                    invokeRuntime(meth, "call", genericDescriptor(arg + 2));
                     break;
                 }
 

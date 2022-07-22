@@ -13,9 +13,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import io.github.gaming32.python4j.objects.PyFunctionObject;
 import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.runtime.PyArguments;
+import io.github.gaming32.python4j.runtime.PySimpleFunctionObject;
 import io.github.gaming32.python4j.runtime.PyModule;
 
 public final class PyJavaVirtualModule implements PyModule {
@@ -93,7 +93,7 @@ public final class PyJavaVirtualModule implements PyModule {
                     String name = methodAnno.value();
                     if (name.isEmpty()) name = method.getName();
                     try {
-                        contents.put(name, new PyFunctionObject(
+                        contents.put(name, new PySimpleFunctionObject(
                             (Function<PyArguments, PyObject>)LambdaMetafactory.metafactory(
                                 lookup,
                                 "apply",

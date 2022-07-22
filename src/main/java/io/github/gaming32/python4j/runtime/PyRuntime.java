@@ -134,12 +134,18 @@ public final class PyRuntime {
         return PyBool.fromBoolean(a != b);
     }
 
-    public static PyObject call(PyObject o1) {
-        return o1.__call__(new PyArguments(kwNames));
+    public static PyObject call(PyObject o1, PyObject o2) {
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
-    public static PyObject call(PyObject o1, PyObject o2) {
-        return o1.__call__(new PyArguments(kwNames, o2));
+    public static PyObject call(PyObject o1, PyObject o2, PyObject o3) {
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     // region GENERATED CODE (see generate_large_runtime_handlers.py)
@@ -969,56 +975,88 @@ public final class PyRuntime {
         return result;
     }
 
-    public static PyObject call(PyObject o1, PyObject o2, PyObject o3) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3));
-    }
-
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4, PyObject o5) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4, o5));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4, o5));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4, PyObject o5, PyObject o6) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4, o5, o6));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4, o5, o6));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4, PyObject o5, PyObject o6, PyObject o7) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4, o5, o6, o7));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4, o5, o6, o7));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4, PyObject o5, PyObject o6, PyObject o7, PyObject o8) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4, o5, o6, o7, o8));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4, o5, o6, o7, o8));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4, PyObject o5, PyObject o6, PyObject o7, PyObject o8, PyObject o9) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4, o5, o6, o7, o8, o9));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4, o5, o6, o7, o8, o9));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4, PyObject o5, PyObject o6, PyObject o7, PyObject o8, PyObject o9, PyObject o10) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4, o5, o6, o7, o8, o9, o10));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4, o5, o6, o7, o8, o9, o10));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4, PyObject o5, PyObject o6, PyObject o7, PyObject o8, PyObject o9, PyObject o10, PyObject o11) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4, o5, o6, o7, o8, o9, o10, o11));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4, PyObject o5, PyObject o6, PyObject o7, PyObject o8, PyObject o9, PyObject o10, PyObject o11, PyObject o12) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4, PyObject o5, PyObject o6, PyObject o7, PyObject o8, PyObject o9, PyObject o10, PyObject o11, PyObject o12, PyObject o13) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4, PyObject o5, PyObject o6, PyObject o7, PyObject o8, PyObject o9, PyObject o10, PyObject o11, PyObject o12, PyObject o13, PyObject o14) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4, PyObject o5, PyObject o6, PyObject o7, PyObject o8, PyObject o9, PyObject o10, PyObject o11, PyObject o12, PyObject o13, PyObject o14, PyObject o15) {
-        return o1.__call__(new PyArguments(kwNames, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15));
+        if (o1 == null) {
+            return o2.__call__(new PyArguments(kwNames, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15));
+        }
+        throw new UnsupportedOperationException("Methods not implemented yet");
     }
 
     // endregion GENERATED CODE

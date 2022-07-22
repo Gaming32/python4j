@@ -1,13 +1,13 @@
-package io.github.gaming32.python4j.objects;
+package io.github.gaming32.python4j.runtime;
 
 import java.util.function.Function;
 
-import io.github.gaming32.python4j.runtime.PyArguments;
+import io.github.gaming32.python4j.objects.PyObject;
 
-public final class PyFunctionObject extends PyObject {
+public final class PySimpleFunctionObject extends PyObject {
     private final Function<PyArguments, PyObject> function;
 
-    public PyFunctionObject(Function<PyArguments, PyObject> function) {
+    public PySimpleFunctionObject(Function<PyArguments, PyObject> function) {
         this.function = function;
     }
 

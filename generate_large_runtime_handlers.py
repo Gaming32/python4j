@@ -95,17 +95,23 @@ with open(PATH, 'w') as fp:
 
 
     # public static PyObject call(PyObject o1, PyObject o2, PyObject o3) {
-    #     return o2.__call__(new PyArguments(kwNames, o3));
+    #     if (o1 == null) {
+    #         return o2.__call__(new PyArguments(kwNames, o3));
+    #     }
+    #     throw new UnsupportedOperationException("Methods not implemented yet");
     # }
-    for i in range(3, 16):
-        prn('public static PyObject call(PyObject o1, PyObject o2', end='')
-        for j in range(3, i + 1):
+    for i in range(4, 16):
+        prn('public static PyObject call(PyObject o1, PyObject o2, PyObject o3', end='')
+        for j in range(4, i + 1):
             prn(f', PyObject o{j}', end='')
         prn(') {')
-        prn('    return o1.__call__(new PyArguments(kwNames, o2', end='')
-        for j in range(3, i + 1):
+        prn('    if (o1 == null) {')
+        prn('        return o2.__call__(new PyArguments(kwNames, o3', end='')
+        for j in range(4, i + 1):
             prn(f', o{j}', end='')
         prn('));')
+        prn('    }')
+        prn('    throw new UnsupportedOperationException("Methods not implemented yet");')
         prn('}')
         prn()
 
