@@ -3,6 +3,7 @@ package io.github.gaming32.python4j.runtime;
 import java.util.Map;
 import java.util.function.Function;
 
+import io.github.gaming32.python4j.bytecode.Opcode;
 import io.github.gaming32.python4j.objects.PyBool;
 import io.github.gaming32.python4j.objects.PyCodeObject;
 import io.github.gaming32.python4j.objects.PyDict;
@@ -152,7 +153,45 @@ public final class PyRuntime {
     }
 
     public static PyObject makeFunction(PyObject code, Function<PyObject[], PyObject> actualFunction) {
-        return new PyFunctionObject((PyCodeObject)code, actualFunction);
+        return new PyFunctionObject((PyCodeObject)code, actualFunction, (PyTuple)null, null, null);
+    }
+
+    public static PyObject makeFunction(PyObject arg0, PyObject code, Function<PyObject[], PyObject> actualFunction, int flags) {
+        PyTuple defaults = null;
+        PyDict kwDefaults = null;
+        PyTuple annotations = null;
+        if ((flags & Opcode.MKFN_DEFAULTS) != 0) {
+            defaults = (PyTuple)arg0;
+        } else if ((flags & Opcode.MKFN_KWDEFAULTS) != 0) {
+            kwDefaults = (PyDict)arg0;
+        } else if ((flags & Opcode.MKFN_ANNOTATIONS) != 0) {
+            annotations = (PyTuple)arg0;
+        }
+        return new PyFunctionObject((PyCodeObject)code, actualFunction, defaults, kwDefaults, annotations);
+    }
+
+    public static PyObject makeFunction(PyObject arg0, PyObject arg1, PyObject code, Function<PyObject[], PyObject> actualFunction, int flags) {
+        PyTuple defaults = null;
+        PyDict kwDefaults = null;
+        PyTuple annotations = null;
+        if ((flags & Opcode.MKFN_DEFAULTS) != 0) {
+            defaults = (PyTuple)arg0;
+            if ((flags & Opcode.MKFN_KWDEFAULTS) != 0) {
+                kwDefaults = (PyDict)arg1;
+            } else if ((flags & Opcode.MKFN_ANNOTATIONS) != 0) {
+                annotations = (PyTuple)arg1;
+            }
+        } else if ((flags & Opcode.MKFN_KWDEFAULTS) != 0) {
+            kwDefaults = (PyDict)arg0;
+            if ((flags & Opcode.MKFN_ANNOTATIONS) != 0) {
+                annotations = (PyTuple)arg1;
+            }
+        }
+        return new PyFunctionObject((PyCodeObject)code, actualFunction, defaults, kwDefaults, annotations);
+    }
+
+    public static PyObject makeFunction(PyObject arg0, PyObject arg1, PyObject arg2, PyObject code, Function<PyObject[], PyObject> actualFunction, int flags) {
+        return new PyFunctionObject((PyCodeObject)code, actualFunction, (PyTuple)arg0, (PyDict)arg1, (PyTuple)arg2);
     }
 
     // region GENERATED CODE (see generate_large_runtime_handlers.py)

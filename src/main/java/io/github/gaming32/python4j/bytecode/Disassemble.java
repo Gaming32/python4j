@@ -232,7 +232,6 @@ public final class Disassemble {
     private static final int LOAD_GLOBAL = Opcode.OP_MAP.get("LOAD_GLOBAL");
     private static final int BINARY_OP = Opcode.OP_MAP.get("BINARY_OP");
     private static final int FOR_ITER = Opcode.OP_MAP.get("FOR_ITER");
-    private static final int LOAD_ATTR = Opcode.OP_MAP.get("LOAD_ATTR");
 
     private static final int CACHE = Opcode.OP_MAP.get("CACHE");
 
@@ -381,7 +380,7 @@ public final class Disassemble {
 
     static void disassembleBytes0(
         byte[] code, PrintStream out,
-        IntFunction<String> varnameFromOparg,
+        IntFunction<PyUnicode> varnameFromOparg,
         PyTuple names, PyTuple co_consts,
         Map<Integer, Integer> lineStarts,
         List<ExceptionTableEntry> exceptionEntries,
@@ -432,12 +431,13 @@ public final class Disassemble {
 
     static List<Instruction> getInstructionsBytes(
         byte[] code,
-        IntFunction<String> varnameFromOparg,
+        IntFunction<PyUnicode> varnameFromOparg,
         PyTuple names, PyTuple co_consts,
         Map<Integer, Integer> lineStarts,
         List<ExceptionTableEntry> exceptionEntries,
         boolean showCaches
     ) {
+        final IntFunction<PyObject> getName = names != null ? names::getItem : null;
         final List<Instruction> result = new ArrayList<>();
         final Set<Integer> labels = new HashSet<>(findLabels(code));
         for (final ExceptionTableEntry entry : exceptionEntries) {
@@ -464,21 +464,14 @@ public final class Disassemble {
                     argRepr = constInfo.getValue();
                 } else if (Opcode.HAS_NAME.contains(deop)) {
                     if (deop == LOAD_GLOBAL) {
-                        final var nameInfo = getNameInfo(arg / 2, names);
+                        final var nameInfo = getNameInfo(arg / 2, getName);
                         argVal = nameInfo.getKey();
                         argRepr = nameInfo.getValue();
                         if ((arg & 1) != 0 && !argRepr.isEmpty()) {
                             argRepr = "NULL + " + argRepr;
                         }
-                    } else if (deop == LOAD_ATTR) {
-                        final var nameInfo = getNameInfo(arg / 2, names);
-                        argVal = nameInfo.getKey();
-                        argRepr = nameInfo.getValue();
-                        if ((arg & 1) != 0 && !argRepr.isEmpty()) {
-                            argRepr = "NULL|self + " + argRepr;
-                        }
                     } else {
-                        final var nameInfo = getNameInfo(arg, names);
+                        final var nameInfo = getNameInfo(arg, getName);
                         argVal = nameInfo.getKey();
                         argRepr = nameInfo.getValue();
                     }
@@ -494,7 +487,8 @@ public final class Disassemble {
                     argVal = PyLong.fromInt(jArgVal);
                     argRepr = "to " + argVal.__repr__();
                 } else if (Opcode.HAS_LOCAL.contains(deop) || Opcode.HAS_FREE.contains(deop)) {
-                    final var nameInfo = getNameInfo(arg, names);
+                    @SuppressWarnings({ "unchecked", "rawtypes" })
+                    final Map.Entry<PyObject, String> nameInfo = getNameInfo(arg, (IntFunction)varnameFromOparg);
                     argVal = nameInfo.getKey();
                     argRepr = nameInfo.getValue();
                 } else if (Opcode.HAS_COMPARE.contains(deop)) {
@@ -555,9 +549,9 @@ public final class Disassemble {
         return result;
     }
 
-    private static Map.Entry<PyObject, String> getNameInfo(int nameIndex, PyTuple names) {
-        if (names != null) {
-            final PyObject argVal = names.getItem(nameIndex);
+    private static Map.Entry<PyObject, String> getNameInfo(int nameIndex, IntFunction<PyObject> getName) {
+        if (getName != null) {
+            final PyObject argVal = getName.apply(nameIndex);
             return Map.entry(argVal, ((PyUnicode)argVal).toString());
         }
         return Map.entry(UNKNOWN, "");

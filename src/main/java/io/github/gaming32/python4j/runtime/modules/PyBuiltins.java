@@ -5,9 +5,13 @@ import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.objects.PyUnicode;
 import io.github.gaming32.python4j.runtime.PyArguments;
 import io.github.gaming32.python4j.runtime.javavirtualmodule.JavaVirtualModule;
+import io.github.gaming32.python4j.runtime.javavirtualmodule.ModuleConstant;
 import io.github.gaming32.python4j.runtime.javavirtualmodule.ModuleMethod;
 
 public final class PyBuiltins extends JavaVirtualModule {
+    @ModuleConstant
+    public static final PyNoneType None = PyNoneType.PyNone;
+
     public PyBuiltins() {
         super("builtins");
     }

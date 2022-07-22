@@ -27,6 +27,10 @@ public class PyDict extends PyObject implements SupportsToArray {
         return Collections.unmodifiableMap(elements);
     }
 
+    public int length() {
+        return elements.size();
+    }
+
     @Override
     public String __repr__() {
         StringBuilder sb = new StringBuilder("{");

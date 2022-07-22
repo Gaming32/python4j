@@ -3,6 +3,7 @@ package io.github.gaming32.python4j.runtime.javavirtualmodule;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -202,6 +203,14 @@ public final class PyJavaVirtualModule implements PyModule {
                         throw new Error(t);
                     }
                 }
+            }
+        }
+        for (final Field field : clazz.getFields()) {
+            final ModuleConstant anno = field.getAnnotation(ModuleConstant.class);
+            if (anno != null) {
+                String name = anno.value();
+                if (name.isEmpty()) name = field.getName();
+                contents.put(name, (PyObject)field.get(null));
             }
         }
     }

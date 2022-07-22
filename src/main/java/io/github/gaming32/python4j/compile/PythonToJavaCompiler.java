@@ -148,11 +148,11 @@ public class PythonToJavaCompiler {
             "(Ljava/lang/Class;I[L" + C_PYOBJECT + ";)[L" + C_PYOBJECT + ";",
             false
         );
-        if (codeObj.getCo_argcount() == 0) {
+        if (codeObj.getSumArgCount() == 0) {
             meth.pop();
         } else {
             int i;
-            for (i = 0; i < codeObj.getCo_argcount() - 1; i++) {
+            for (i = 0; i < codeObj.getSumArgCount() - 1; i++) {
                 meth.dup();
                 meth.iconst(i);
                 meth.visitInsn(Opcodes.AALOAD);
@@ -527,32 +527,38 @@ public class PythonToJavaCompiler {
                 }
 
                 case Opcode.MAKE_FUNCTION: {
-                    if (arg == 0) {
-                        meth.invokedynamic(
-                            "apply",
-                            "()Ljava/util/function/Function;",
+                    meth.invokedynamic(
+                        "apply",
+                        "()Ljava/util/function/Function;",
+                        new Handle(
+                            Opcodes.H_INVOKESTATIC,
+                            "java/lang/invoke/LambdaMetafactory",
+                            "metafactory",
+                            "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
+                            false
+                        ),
+                        new Object[] {
+                            Type.getMethodType("(Ljava/lang/Object;)Ljava/lang/Object;"),
                             new Handle(
                                 Opcodes.H_INVOKESTATIC,
-                                "java/lang/invoke/LambdaMetafactory",
-                                "metafactory",
-                                "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
+                                className,
+                                methodNames.get(lastCodeObject),
+                                METHOD_DESCRIPTOR,
                                 false
                             ),
-                            new Object[] {
-                                Type.getMethodType("(Ljava/lang/Object;)Ljava/lang/Object;"),
-                                new Handle(
-                                    Opcodes.H_INVOKESTATIC,
-                                    className,
-                                    methodNames.get(lastCodeObject),
-                                    METHOD_DESCRIPTOR,
-                                    false
-                                ),
-                                Type.getMethodType(METHOD_DESCRIPTOR)
-                            }
-                        );
+                            Type.getMethodType(METHOD_DESCRIPTOR)
+                        }
+                    );
+                    if (arg == 0) {
                         invokeRuntime(meth, "makeFunction", "(L" + C_PYOBJECT + ";Ljava/util/function/Function;)L" + C_PYOBJECT + ";");
                     } else {
-                        throw new IllegalArgumentException("MAKE_FUNCTION flags not supported yet");
+                        int nargs = 1 + Integer.bitCount(arg);
+                        final int clearedFlags = arg & ~(Opcode.MKFN_DEFAULTS | Opcode.MKFN_KWDEFAULTS | Opcode.MKFN_ANNOTATIONS);
+                        if (clearedFlags != 0) {
+                            throw new IllegalArgumentException("Unsupported MAKE_FUNCTION args: 0x" + Integer.toHexString(clearedFlags));
+                        }
+                        meth.iconst(arg);
+                        invokeRuntime(meth, "makeFunction", "(" + ("L" + C_PYOBJECT + ";").repeat(nargs) + "Ljava/util/function/Function;I)L" + C_PYOBJECT + ";");
                     }
                     break;
                 }
@@ -576,7 +582,7 @@ public class PythonToJavaCompiler {
         mv.visitMaxs(-1, -1);
         mv.visitEnd();
         depth--;
-        if (depth == 0 && codeObj.getCo_argcount() == 0) {
+        if (depth == 0 && codeObj.getSumArgCount() == 0) {
             generateMainMethod(methodName);
         }
     }

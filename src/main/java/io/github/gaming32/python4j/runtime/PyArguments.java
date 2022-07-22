@@ -24,7 +24,7 @@ public final class PyArguments {
         }
         args = new PyObject[argsAndKwargs.length - kwNames.length()];
         System.arraycopy(argsAndKwargs, 0, args, 0, args.length);
-        kwargs = new LinkedHashMap<>(kwNames.length());
+        kwargs = new LinkedHashMap<>(kwNames.length() + 1);
         for (int i = args.length; i < argsAndKwargs.length; i++) {
             kwargs.put(kwNames.getItem(i - args.length).toString(), argsAndKwargs[i]);
         }

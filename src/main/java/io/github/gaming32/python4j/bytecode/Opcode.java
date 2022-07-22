@@ -32,10 +32,10 @@ public final class Opcode {
     public static final int CO_ITERABLE_COROUTINE = 256;
     public static final int CO_ASYNC_GENERATOR = 512;
 
-    public static final int MKFN_DEFAULTS = 1;
-    public static final int MKFN_KWDEFAULTS = 2;
-    public static final int MKFN_ANNOTATIONS = 4;
-    public static final int MKFN_CLOSURE = 8;
+    public static final int MKFN_DEFAULTS = 0x01;
+    public static final int MKFN_KWDEFAULTS = 0x02;
+    public static final int MKFN_ANNOTATIONS = 0x04;
+    public static final int MKFN_CLOSURE = 0x08;
 
     // region GENERATED CODE (see generate_opcode_fields.py)
     public static final int CACHE = 0;
@@ -281,8 +281,6 @@ public final class Opcode {
         o.hasLocal.add(125);
         o.defOp("DELETE_FAST", 126);      // Local variable number
         o.hasLocal.add(126);
-        o.defOp("LOAD_FAST_CHECK", 127);  // Local variable number
-        o.hasLocal.add(127);
         o.jrelOp("POP_JUMP_FORWARD_IF_NOT_NONE", 128);
         o.jrelOp("POP_JUMP_FORWARD_IF_NONE", 129);
         o.defOp("RAISE_VARARGS", 130);    // Number of raise arguments (1, 2, or 3);

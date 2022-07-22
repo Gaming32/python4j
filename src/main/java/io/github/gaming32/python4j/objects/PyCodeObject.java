@@ -308,6 +308,10 @@ public class PyCodeObject extends PyObject {
         return co_kwonlyargcount;
     }
 
+    public int getSumArgCount() {
+        return co_argcount + co_kwonlyargcount;
+    }
+
     public int getCo_stacksize() {
         return co_stacksize;
     }
@@ -501,8 +505,8 @@ public class PyCodeObject extends PyObject {
         };
     }
 
-    public String varnameFromOparg(int oparg) {
-        return ((PyUnicode)co_localsplusnames.getItem(oparg)).toString();
+    public PyUnicode varnameFromOparg(int oparg) {
+        return (PyUnicode)co_localsplusnames.getItem(oparg);
     }
 
     private static void getLocalsPlusCounts(PyTuple names, PyBytes kinds, int[] returnValues) {

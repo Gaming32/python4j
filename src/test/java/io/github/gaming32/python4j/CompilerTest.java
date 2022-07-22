@@ -22,7 +22,7 @@ public class CompilerTest {
         }
         System.out.println(Disassemble.codeInfo(pycFile.getCode()));
         System.out.println();
-        Disassemble.disassemble(pycFile.getCode(), System.out);
+        Disassemble.disassembleRecursive(pycFile.getCode(), System.out);
         System.out.println();
 
         final PythonToJavaCompiler compiler = PythonToJavaCompiler.compile("simple_test", pycFile);
