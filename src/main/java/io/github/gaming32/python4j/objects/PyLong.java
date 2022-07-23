@@ -186,6 +186,10 @@ public class PyLong extends PyVarObject {
         return -N_SMALL_NEG_INTS <= ival && ival <= N_SMALL_POS_INTS;
     }
 
+    private static boolean isSmallInt(long ival) {
+        return -N_SMALL_NEG_INTS <= ival && ival <= N_SMALL_POS_INTS;
+    }
+
     private static PyLong getSmallInt(int ival) {
         assert isSmallInt(ival);
         return SMALL_INTS[N_SMALL_NEG_INTS + ival];
@@ -193,6 +197,11 @@ public class PyLong extends PyVarObject {
 
     private static boolean isMediumInt(int x) {
         int xPlusMask = x + MASK;
+        return xPlusMask < MASK + BASE;
+    }
+
+    private static boolean isMediumInt(long x) {
+        long xPlusMask = x + MASK;
         return xPlusMask < MASK + BASE;
     }
 
@@ -205,6 +214,47 @@ public class PyLong extends PyVarObject {
         result.size = sign;
         result.digits[0] = absX;
         return result;
+    }
+
+    private static PyLong fromLarge(long x) {
+        assert !isMediumInt(x);
+
+        final long absIval;
+        final int sign;
+        if (x < 0) {
+            absIval = -x;
+            sign = -1;
+        } else {
+            absIval = x;
+            sign = 1;
+        }
+        assert absIval >> SHIFT != 0;
+        long t = absIval >> (SHIFT << 1);
+        int ndigits = 2;
+        while (t != 0) {
+            ndigits++;
+            t >>= SHIFT;
+        }
+        final PyLong result = new PyLong(ndigits);
+        int p = 0;
+        result.size = ndigits * sign;
+        t = absIval;
+        while (t != 0) {
+            result.digits[p++] = (int)(t & MASK);
+            t >>= SHIFT;
+        }
+        return result;
+    }
+
+    private static PyLong fromTwoDigits(long x) {
+        if (isSmallInt(x)) {
+            return getSmallInt((int)x);
+        }
+        assert x != 0L;
+        if (isMediumInt(x)) {
+            return fromMedium((int)x);
+        }
+        return fromLarge(x);
     }
 
     static PyLong fromByteArray(byte[] bytes, int n, boolean littleEndian, boolean isSigned) {
@@ -323,6 +373,152 @@ public class PyLong extends PyVarObject {
                 }
         }
         return new int[] {res, overflow};
+    }
+
+    public PyLong add(PyLong b) {
+        if (isMediumValue() && b.isMediumValue()) {
+            return fromTwoDigits((long)mediumValue() + (long)b.mediumValue());
+        }
+
+        final PyLong z;
+        if (size < 0) {
+            if (b.size < 0) {
+                z = add0(this, b);
+                z.size = -z.size;
+            } else {
+                z = sub0(b, this);
+            }
+        } else {
+            if (b.size < 0) {
+                z = sub0(this, b);
+            } else {
+                z = add0(this, b);
+            }
+        }
+        return z;
+    }
+
+    @Override
+    public PyObject __add__(PyObject other) {
+        if (other instanceof PyLong) {
+            return add((PyLong)other);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyLong sub(PyLong b) {
+        if (isMediumValue() && b.isMediumValue()) {
+            return fromTwoDigits((long)mediumValue() - (long)b.mediumValue());
+        }
+
+        final PyLong z;
+        if (size < 0) {
+            if (b.size < 0) {
+                z = sub0(b, this);
+            } else {
+                z = add0(this, b);
+                z.size = -z.size;
+            }
+        } else {
+            if (b.size < 0) {
+                z = add0(this, b);
+            } else {
+                z = sub0(this, b);
+            }
+        }
+        return z;
+    }
+
+    @Override
+    public PyObject __sub__(PyObject other) {
+        if (other instanceof PyLong) {
+            return sub((PyLong)other);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    private static PyLong add0(PyLong a, PyLong b) {
+        int sizeA = Math.abs(a.size), sizeB = Math.abs(b.size);
+        int carry = 0;
+
+        if (sizeA < sizeB) {
+            {
+                final PyLong temp = a;
+                a = b;
+                b = temp;
+            }
+            {
+                final int sizeTemp = sizeA;
+                sizeA = sizeB;
+                sizeB = sizeTemp;
+            }
+        }
+        final PyLong z = new PyLong(sizeA + 1);
+        int i = 0;
+        for (i = 0; i < sizeB; i++) {
+            carry += a.digits[i] + b.digits[i];
+            z.digits[i] = carry & MASK;
+            carry >>= SHIFT;
+        }
+        for (; i < sizeA; i++) {
+            carry += a.digits[i];
+            z.digits[i] = carry & MASK;
+            carry >>= SHIFT;
+        }
+        z.digits[i] = carry;
+        return z.normalize();
+    }
+
+    private static PyLong sub0(PyLong a, PyLong b) {
+        int sizeA = Math.abs(a.size), sizeB = Math.abs(b.size);
+        int sign = 1;
+        int borrow = 0;
+
+        if (sizeA < sizeB) {
+            sign = -1;
+            {
+                final PyLong temp = a;
+                a = b;
+                b = temp;
+            }
+            {
+                final int sizeTemp = sizeA;
+                sizeA = sizeB;
+                sizeB = sizeTemp;
+            }
+        } else if (sizeA == sizeB) {
+            int i = sizeA;
+            while (--i >= 0 && a.digits[i] == b.digits[i]);
+            if (i < 0) {
+                return fromInt(0);
+            }
+            if (a.digits[i] < b.digits[i]) {
+                sign = -1;
+                final PyLong temp = a;
+                a = b;
+                b = temp;
+            }
+            sizeA = sizeB = i + 1;
+        }
+        final PyLong z = new PyLong(sizeA);
+        int i = 0;
+        for (i = 0; i < sizeB; i++) {
+            borrow = a.digits[i] - b.digits[i] - borrow;
+            z.digits[i] = borrow & MASK;
+            borrow >>= SHIFT;
+            borrow &= 1;
+        }
+        for (; i < sizeA; i++) {
+            borrow = a.digits[i] - borrow;
+            z.digits[i] = borrow & MASK;
+            borrow >>= SHIFT;
+            borrow &= 1;
+        }
+        assert borrow == 0;
+        if (sign < 0) {
+            z.size = -z.size;
+        }
+        return z.normalize().maybeSmall();
     }
 
     private PyLong normalize() {
