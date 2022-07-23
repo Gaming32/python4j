@@ -8,8 +8,8 @@ public class PyFrozenSet extends PySet {
     }
 
     @Override
-    public String __repr__() {
-        return "frozenset(" + super.__repr__() + ")";
+    public PyUnicode __repr__() {
+        return PyUnicode.fromString("frozenset(" + super.__repr__() + ")");
     }
 
     @Override

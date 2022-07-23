@@ -395,12 +395,12 @@ public class PyCodeObject extends PyObject {
     }
 
     @Override
-    public String __repr__() {
-        return "<code object " +
+    public PyUnicode __repr__() {
+        return PyUnicode.fromString("<code object " +
             co_name + " at 0x" +
             Integer.toHexString(System.identityHashCode(this)) + ", file \"" +
             co_filename + "\", line " +
-            (co_firstlineno != 0 ? co_firstlineno : -1) + ">";
+            (co_firstlineno != 0 ? co_firstlineno : -1) + ">");
     }
 
     private static final int LOCATION_INFO_SHORT0 = 0;

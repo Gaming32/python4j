@@ -43,4 +43,22 @@ public final class PyBuiltins extends JavaVirtualModule {
         System.out.print(getStringArgOrDefault(args, "end", System.lineSeparator()));
         return PyNoneType.PyNone;
     }
+
+    public static String repr(PyObject obj) {
+        return obj.__repr__().toString();
+    }
+
+    @ModuleMethod
+    public static PyObject repr(PyArguments args) {
+        return args.getArg(0).__repr__();
+    }
+
+    public static String str(PyObject obj) {
+        return obj.__str__().toString();
+    }
+
+    @ModuleMethod
+    public static PyObject str(PyArguments args) {
+        return args.getArg(0).__str__();
+    }
 }

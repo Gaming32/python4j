@@ -5,7 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class PyDict extends PyObject implements SupportsToArray {
-    private final Map<PyObject, PyObject> elements; // TODO: reimplement without Java collections
+    private final Map<PyObject, PyObject> elements;
 
     private PyDict() {
         elements = new LinkedHashMap<>();
@@ -32,7 +32,7 @@ public class PyDict extends PyObject implements SupportsToArray {
     }
 
     @Override
-    public String __repr__() {
+    public PyUnicode __repr__() {
         StringBuilder sb = new StringBuilder("{");
         for (Map.Entry<PyObject, PyObject> entry : elements.entrySet()) {
             if (sb.length() > 1) {
@@ -42,13 +42,17 @@ public class PyDict extends PyObject implements SupportsToArray {
             sb.append(": ");
             sb.append(entry.getValue().__repr__());
         }
-        sb.append("}");
-        return sb.toString();
+        return PyUnicode.fromString(sb.append('}').toString());
     }
 
     @Override
     public PyObject[] toArray() {
         return elements.keySet().toArray(PyObject[]::new);
+    }
+
+    @Override
+    public long __hash__() {
+        return notHashable();
     }
 
     public void update(PyObject other) {

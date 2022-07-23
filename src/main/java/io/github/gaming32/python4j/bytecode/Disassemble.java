@@ -20,6 +20,7 @@ import io.github.gaming32.python4j.Utils;
 import io.github.gaming32.python4j.objects.PyBool;
 import io.github.gaming32.python4j.objects.PyCodeObject;
 import io.github.gaming32.python4j.objects.PyCodeObject.PyCodeAddressRange;
+import io.github.gaming32.python4j.runtime.modules.PyBuiltins;
 import io.github.gaming32.python4j.objects.PyLong;
 import io.github.gaming32.python4j.objects.PyNoneType;
 import io.github.gaming32.python4j.objects.PyObject;
@@ -445,12 +446,9 @@ public final class Disassemble {
                 labels.add(entry.target);
             }
         }
-        Integer startsLine = null;
         for (final OffsetOpArgTriple triple : unpackOpArgs(code)) {
             int offset = triple.offset;
-            if (lineStarts != null) {
-                startsLine = lineStarts.get(offset);
-            }
+            final Integer startsLine = lineStarts != null ? lineStarts.get(offset) : null;
             final boolean isJumpTarget = labels.contains(offset);
             PyObject argVal = null;
             String argRepr = "";
@@ -559,7 +557,7 @@ public final class Disassemble {
 
     private static Map.Entry<PyObject, String> getConstInfo(int op, int arg, PyTuple co_consts) {
         final PyObject argVal = getConstValue(op, arg, co_consts);
-        return Map.entry(argVal, argVal != UNKNOWN ? argVal.__repr__() : "");
+        return Map.entry(argVal, argVal != UNKNOWN ? PyBuiltins.repr(argVal) : "");
     }
 
     private static PyObject getConstValue(int op, int arg, PyTuple co_consts) {

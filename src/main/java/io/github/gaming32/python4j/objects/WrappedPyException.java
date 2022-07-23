@@ -11,7 +11,7 @@ public final class WrappedPyException extends RuntimeException {
     private final PyBaseException wrapped;
 
     public WrappedPyException(PyBaseException wrapped) {
-        super(wrapped.__str__());
+        super(wrapped.toString());
         this.wrapped = wrapped;
     }
 

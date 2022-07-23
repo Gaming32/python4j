@@ -51,7 +51,7 @@ public class PyBytes extends PyVarObject {
     }
 
     @Override
-    public String __repr__() {
+    public PyUnicode __repr__() {
         boolean hasSingleQuote = false;
         for (byte b : bytes) {
             if (b == '\'') {
@@ -87,7 +87,7 @@ public class PyBytes extends PyVarObject {
                 sb.append("\\x").append(String.format("%02x", b & 0xff));
             }
         }
-        return sb.append(quote).toString();
+        return PyUnicode.fromString(sb.append(quote).toString());
     }
 
     public byte[] toByteArray() {

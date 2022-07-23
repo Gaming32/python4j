@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArray {
-    final Set<PyObject> elements; // TODO: reimplement without Java collections
+    final Set<PyObject> elements;
 
     PySet() {
         elements = new HashSet<>();
@@ -30,7 +30,7 @@ public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArr
     }
 
     @Override
-    public String __repr__() {
+    public PyUnicode __repr__() {
         StringBuilder sb = new StringBuilder("{");
         Iterator<PyObject> values = elements.iterator();
         while (values.hasNext()) {
@@ -39,8 +39,7 @@ public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArr
             }
             sb.append(values.next().__repr__());
         }
-        sb.append("}");
-        return sb.toString();
+        return PyUnicode.fromString(sb.append("}").toString());
     }
 
     @Override
@@ -51,6 +50,11 @@ public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArr
     @Override
     public PyObject[] toArray() {
         return elements.toArray(PyObject[]::new);
+    }
+
+    @Override
+    public long __hash__() {
+        return notHashable();
     }
 
     public void update(PyObject sequence) {

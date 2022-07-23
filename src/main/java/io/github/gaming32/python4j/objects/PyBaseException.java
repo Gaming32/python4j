@@ -16,12 +16,12 @@ public class PyBaseException extends PyObject {
     }
 
     @Override
-    public String __str__() {
-        return args.length() == 0 ? "" : args.length() == 1 ? args.getItem(0).__str__() : args.__str__();
+    public PyUnicode __str__() {
+        return args.length() == 0 ? PyUnicode.empty() : args.length() == 1 ? args.getItem(0).__str__() : args.__str__();
     }
 
     @Override
-    public String __repr__() {
+    public PyUnicode __repr__() {
         final StringBuilder result = new StringBuilder(getClass().getSimpleName()).append('(');
         if (args.length() > 0) {
             result.append(args.getItem(0).__repr__());
@@ -29,6 +29,6 @@ public class PyBaseException extends PyObject {
                 result.append(", ").append(args.getItem(i).__repr__());
             }
         }
-        return result.append(')').toString();
+        return PyUnicode.fromString(result.append(')').toString());
     }
 }

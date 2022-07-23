@@ -22,8 +22,8 @@ public class PyComplex extends PyObject {
     }
 
     @Override
-    public String __repr__() {
-        return "(" + real + "+" + imag + "j)";
+    public PyUnicode __repr__() {
+        return PyUnicode.fromString("(" + real + "+" + imag + "j)");
     }
 
     @Override

@@ -50,8 +50,12 @@ public class PyUnicode extends PyObject {
         data = new byte[size];
     }
 
+    public static PyUnicode empty() {
+        return GlobalStrings.empty;
+    }
+
     @Override
-    public String __str__() {
+    public String toString() {
         switch (getKind()) {
             case KIND_1BYTE:
                 return new String(data, 0, data.length, StandardCharsets.ISO_8859_1);
@@ -65,7 +69,12 @@ public class PyUnicode extends PyObject {
     }
 
     @Override
-    public String __repr__() {
+    public PyUnicode __str__() {
+        return this;
+    }
+
+    @Override
+    public PyUnicode __repr__() {
         boolean hasSingleQuote = false;
         for (int i = 0; i < length(); i++) {
             int c = getCodePoint(i);
@@ -107,7 +116,7 @@ public class PyUnicode extends PyObject {
                 sb.append("\\U").append(String.format("%08x", c));
             }
         }
-        return sb.append(quote).toString();
+        return fromString(sb.append(quote).toString());
     }
 
     public int length() {

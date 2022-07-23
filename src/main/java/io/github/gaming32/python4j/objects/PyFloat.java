@@ -42,8 +42,8 @@ public class PyFloat extends PyObject {
     }
 
     @Override
-    public String __repr__() {
-        return Double.toString(fval);
+    public PyUnicode __repr__() {
+        return PyUnicode.fromString(Double.toString(fval));
     }
 
     @Override

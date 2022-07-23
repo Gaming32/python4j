@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class PyList extends PyObject implements SupportsToArray {
-    private final List<PyObject> elements; // TODO: reimplement without Java collections
+    private final List<PyObject> elements;
 
     private PyList(int size) {
         elements = new ArrayList<>(size);
@@ -50,7 +50,7 @@ public class PyList extends PyObject implements SupportsToArray {
     }
 
     @Override
-    public String __repr__() {
+    public PyUnicode __repr__() {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < elements.size(); i++) {
             if (i > 0) {
@@ -58,12 +58,16 @@ public class PyList extends PyObject implements SupportsToArray {
             }
             sb.append(elements.get(i).__repr__());
         }
-        sb.append("]");
-        return sb.toString();
+        return PyUnicode.fromString(sb.append(']').toString());
     }
 
     @Override
     public boolean __bool__() {
         return !elements.isEmpty();
+    }
+
+    @Override
+    public long __hash__() {
+        return notHashable();
     }
 }

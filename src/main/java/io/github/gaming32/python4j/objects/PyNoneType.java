@@ -2,13 +2,14 @@ package io.github.gaming32.python4j.objects;
 
 public final class PyNoneType extends PyObject {
     public static final PyNoneType PyNone = new PyNoneType();
+    private static final PyUnicode REPR = PyUnicode.fromString("None");
 
     private PyNoneType() {
     }
 
     @Override
-    public String __repr__() {
-        return "None";
+    public PyUnicode __repr__() {
+        return REPR;
     }
 
     @Override

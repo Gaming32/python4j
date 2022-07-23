@@ -2,6 +2,8 @@ package io.github.gaming32.python4j.objects;
 
 public class PyLong extends PyVarObject {
     static final int SHIFT = 30;
+    private static final int DECIMAL_SHIFT = 9;
+    private static final int DECIMAL_BASE = 1000000000;
     private static final int BASE = 1 << SHIFT;
     private static final int MASK = BASE - 1;
 
@@ -11,8 +13,13 @@ public class PyLong extends PyVarObject {
 
     static {
         for (int i = -N_SMALL_NEG_INTS; i < N_SMALL_POS_INTS; i++) {
-            PyLong val = new PyLong(1);
-            val.digits[0] = i;
+            final PyLong val = new PyLong(1);
+            if (i > 0) {
+                val.digits[0] = i;
+            } else if (i < 0) {
+                val.digits[0] = -i;
+                val.size = -1;
+            }
             SMALL_INTS[i + N_SMALL_NEG_INTS] = val;
         }
     }
@@ -60,7 +67,7 @@ public class PyLong extends PyVarObject {
     final int[] digits;
 
     PyLong(int size) {
-        digits = new int[this.size = size];
+        digits = new int[this.size = size != 0 ? size : 1];
     }
 
     public static PyLong fromInt(int ival) {
@@ -91,9 +98,58 @@ public class PyLong extends PyVarObject {
     }
 
     @Override
-    public String __repr__() {
-        // TODO: reimplement to support values > Integer.MAX_VALUE
-        return String.valueOf(digits[0]);
+    public PyUnicode __repr__() {
+        final int sizeA = Math.abs(this.size);
+        final boolean negative = this.size < 0;
+        final int d = 99;
+
+        final int[] pin = digits, pout = new int[1 + sizeA + sizeA / d];
+        int size = 0;
+        for (int i = sizeA; --i >= 0;) {
+            int hi = pin[i];
+            for (int j = 0; j < size; j++) {
+                final long z = (long)pout[j] << SHIFT | hi;
+                hi = (int)(z / DECIMAL_BASE);
+                pout[j] = (int)(z - (long)hi * DECIMAL_BASE);
+            }
+            while (hi != 0) {
+                pout[size++] = hi % DECIMAL_BASE;
+                hi /= DECIMAL_BASE;
+            }
+        }
+        if (size == 0) {
+            pout[size++] = 0;
+        }
+
+        int strlen = (negative ? 2 : 1) + (size - 1) * DECIMAL_SHIFT;
+        int tenpow = 10;
+        int rem = pout[size - 1];
+        while (rem >= tenpow) {
+            tenpow *= 10;
+            strlen++;
+        }
+        final byte[] result = new byte[strlen];
+
+        int p = strlen;
+        int i;
+        for (i = 0; i < size - 1; i++) {
+            rem = pout[i];
+            for (int j = 0; j < DECIMAL_SHIFT; j++) {
+                result[--p] = (byte)('0' + rem % 10);
+                rem /= 10;
+            }
+        }
+        rem = pout[i];
+        do {
+            result[--p] = (byte)('0' + rem % 10);
+            rem /= 10;
+        } while (rem != 0);
+
+        if (negative) {
+            result[--p] = '-';
+        }
+
+        return PyUnicode.fromKindAndData(PyUnicode.KIND_1BYTE, result, result.length);
     }
 
     @Override
@@ -254,7 +310,7 @@ public class PyLong extends PyVarObject {
                     int prev = x;
                     x = x << SHIFT | digits[i];
                     if ((x >> SHIFT) != prev) {
-                        res = -1;
+                        overflow = sign;
                         return new int[] {res, overflow};
                     }
                 }

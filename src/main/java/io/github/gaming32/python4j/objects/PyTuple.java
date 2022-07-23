@@ -67,7 +67,7 @@ public class PyTuple extends PyObject implements Iterable<PyObject>, SupportsToA
     }
 
     @Override
-    public String __repr__() {
+    public PyUnicode __repr__() {
         StringBuilder sb = new StringBuilder("(");
         for (int i = 0; i < elements.length; i++) {
             if (i > 0) {
@@ -78,7 +78,7 @@ public class PyTuple extends PyObject implements Iterable<PyObject>, SupportsToA
         if (elements.length == 1) {
             sb.append(',');
         }
-        return sb.append(')').toString();
+        return PyUnicode.fromString(sb.append(')').toString());
     }
 
     @Override

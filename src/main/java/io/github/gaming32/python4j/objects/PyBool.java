@@ -3,6 +3,8 @@ package io.github.gaming32.python4j.objects;
 public final class PyBool extends PyLong {
     public static final PyBool PyFalse = new PyBool(0);
     public static final PyBool PyTrue = new PyBool(1);
+    public static final PyUnicode TRUE_REPR = PyUnicode.fromString("True");
+    public static final PyUnicode FALSE_REPR = PyUnicode.fromString("False");
 
     private PyBool(int v) {
         super(1);
@@ -10,8 +12,8 @@ public final class PyBool extends PyLong {
     }
 
     @Override
-    public String __repr__() {
-        return digits[0] != 0 ? "True" : "False";
+    public PyUnicode __repr__() {
+        return digits[0] != 0 ? TRUE_REPR : FALSE_REPR;
     }
 
     public boolean booleanValue() {
