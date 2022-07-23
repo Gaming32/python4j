@@ -1,6 +1,7 @@
 package io.github.gaming32.python4j.runtime.modules;
 
 import io.github.gaming32.python4j.objects.PyNoneType;
+import io.github.gaming32.python4j.objects.PyNotImplemented;
 import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.objects.PyUnicode;
 import io.github.gaming32.python4j.runtime.PyArguments;
@@ -11,6 +12,8 @@ import io.github.gaming32.python4j.runtime.javavirtualmodule.ModuleMethod;
 public final class PyBuiltins extends JavaVirtualModule {
     @ModuleConstant
     public static final PyNoneType None = PyNoneType.PyNone;
+    @ModuleConstant
+    public static final PyNotImplemented NotImplemented = PyNotImplemented.NotImplemented;
 
     public PyBuiltins() {
         super("builtins");
@@ -51,14 +54,5 @@ public final class PyBuiltins extends JavaVirtualModule {
     @ModuleMethod
     public static PyObject repr(PyArguments args) {
         return args.getArg(0).__repr__();
-    }
-
-    public static String str(PyObject obj) {
-        return obj.__str__().toString();
-    }
-
-    @ModuleMethod
-    public static PyObject str(PyArguments args) {
-        return args.getArg(0).__str__();
     }
 }

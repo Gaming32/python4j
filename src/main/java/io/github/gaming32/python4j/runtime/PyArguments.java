@@ -1,5 +1,6 @@
 package io.github.gaming32.python4j.runtime;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -19,7 +20,7 @@ public final class PyArguments {
     PyArguments(PyTuple kwNames, PyObject... argsAndKwargs) {
         if (kwNames == null) {
             args = argsAndKwargs;
-            kwargs = Map.of();
+            kwargs = Collections.emptyMap();
             return;
         }
         args = new PyObject[argsAndKwargs.length - kwNames.length()];

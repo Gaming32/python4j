@@ -176,6 +176,49 @@ public class PyUnicode extends PyObject {
         }
     }
 
+    @Override
+    public PyObject __add__(PyObject other) {
+        if (other instanceof PyUnicode) {
+            return concat((PyUnicode)other);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyUnicode repeat(int count) {
+        if (count < 0) {
+            throw new IllegalArgumentException("count cannot be less than 0");
+        }
+        if (count == 0) {
+            return GlobalStrings.empty;
+        }
+        if (count == 1) {
+            return this;
+        }
+        final byte[] result = new byte[data.length * count];
+        for (int i = 0, p = 0; i < count; i++) {
+            System.arraycopy(data, 0, result, p, data.length);
+            p += data.length;
+        }
+        return new PyUnicode(result, kindAndFlags & ~FLAG_INTERNED);
+    }
+
+    @Override
+    public PyObject __mul__(PyObject other) {
+        if (other instanceof PyLong) {
+            final int[] longAndOverflow = ((PyLong)other).asLongAndOverflow();
+            if (longAndOverflow[1] != 0) {
+                throw new IllegalArgumentException("PyLong too large");
+            }
+            return repeat(longAndOverflow[0]);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    @Override
+    public PyObject __rmul__(PyObject other) {
+        return __mul__(other);
+    }
+
     public int getKind() {
         return kindAndFlags & KIND_MASK;
     }
@@ -379,14 +422,6 @@ public class PyUnicode extends PyObject {
     @Override
     public boolean __bool__() {
         return data.length > 0;
-    }
-
-    @Override
-    public PyObject __add__(PyObject other) {
-        if (other instanceof PyUnicode) {
-            return concat((PyUnicode)other);
-        }
-        return PyNotImplemented.NotImplemented;
     }
 
     private static PyUnicode fromUCS1(byte[] u, int size) {
