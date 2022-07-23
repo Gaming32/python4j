@@ -50,4 +50,50 @@ public class PyFloat extends PyObject {
     public boolean __bool__() {
         return fval != 0;
     }
+
+    public PyFloat add(PyFloat other) {
+        return fromDouble(fval + other.fval);
+    }
+
+    @Override
+    public PyObject __add__(PyObject other) {
+        if (other instanceof PyFloat) {
+            return add((PyFloat)other);
+        }
+        if (other instanceof PyLong) {
+            return fromDouble(fval + ((PyLong)other).toDouble());
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    @Override
+    public PyObject __radd__(PyObject other) {
+        return __add__(other);
+    }
+
+    public PyFloat sub(PyFloat other) {
+        return fromDouble(fval - other.fval);
+    }
+
+    @Override
+    public PyObject __sub__(PyObject other) {
+        if (other instanceof PyFloat) {
+            return sub((PyFloat)other);
+        }
+        if (other instanceof PyLong) {
+            return fromDouble(fval - ((PyLong)other).toDouble());
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    @Override
+    public PyObject __rsub__(PyObject other) {
+        if (other instanceof PyFloat) {
+            return ((PyFloat)other).sub(this);
+        }
+        if (other instanceof PyLong) {
+            return fromDouble(((PyLong)other).toDouble() - fval);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
 }

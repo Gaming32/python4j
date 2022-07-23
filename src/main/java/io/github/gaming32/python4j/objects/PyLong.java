@@ -1,5 +1,7 @@
 package io.github.gaming32.python4j.objects;
 
+import io.github.gaming32.python4j.FloatInfo;
+
 public class PyLong extends PyVarObject {
     static final int SHIFT = 30;
     private static final int DECIMAL_SHIFT = 9;
@@ -180,6 +182,95 @@ public class PyLong extends PyVarObject {
         }
         x = x * sign;
         return x == -1 ? -2 : x;
+    }
+
+    public double toDouble() {
+        if (isMediumValue()) {
+            return mediumValue();
+        }
+        final Number[] x = frexp();
+        return x[0].doubleValue() * Math.pow(2, x[1].intValue());
+    }
+
+    private static final int[] HALF_EVEN_CORRECTION = {0, -1, -2, 1, 0, -1, 2, 1};
+    private static final double EXP2_DBL_MANT_DIG = 9007199254740992.0;
+
+    private Number[] frexp() {
+        final int[] xDigits = new int[2 + (FloatInfo.DBL_MANT_DIG + 1) / SHIFT];
+
+        final int aSize = Math.abs(size);
+        if (aSize == 0) {
+            return new Number[] {Double.valueOf(0), Integer.valueOf(0)};
+        }
+        int aBits = bitLengthDigit(digits[aSize - 1]);
+        aBits = (aSize - 1) * SHIFT + aBits;
+
+        int xSize;
+        if (aBits < FloatInfo.DBL_MANT_DIG + 2) {
+            final int shiftDigits = (FloatInfo.DBL_MANT_DIG + 2 - aBits) / SHIFT;
+            final int shiftBits = (FloatInfo.DBL_MANT_DIG + 2 - aBits) % SHIFT;
+            xSize = shiftDigits;
+            final int rem = vLshift(xDigits, xSize, digits, aSize, shiftBits);
+            xSize += aSize;
+            xDigits[xSize++] = rem;
+        } else {
+            int shiftDigits = (aBits - FloatInfo.DBL_MANT_DIG - 2) / SHIFT;
+            final int shiftBits = (aBits - FloatInfo.DBL_MANT_DIG - 2) % SHIFT;
+            final int rem = vRshift(xDigits, digits, shiftDigits, aSize - shiftDigits, shiftBits);
+            xSize = aSize - shiftDigits;
+            if (rem != 0) {
+                xDigits[0] |= 1;
+            } else while (shiftDigits > 0) {
+                if (digits[--shiftDigits] != 0) {
+                    xDigits[0] |= 1;
+                    break;
+                }
+            }
+        }
+        assert 1 <= xSize && xSize <= xDigits.length;
+
+        xDigits[0] += HALF_EVEN_CORRECTION[xDigits[0] & 7];
+        double dx = xDigits[--xSize];
+        while (xSize > 0) {
+            dx = dx * BASE + xDigits[--xSize];
+        }
+
+        dx /= 4.0 * EXP2_DBL_MANT_DIG;
+        if (dx == 1.0) {
+            dx = 0.5;
+            aBits++;
+        }
+
+        return new Number[] {Double.valueOf(size < 0 ? -dx : dx), Integer.valueOf(aBits)};
+    }
+
+    private static int bitLengthDigit(int digit) {
+        return 31 - Integer.numberOfLeadingZeros(digit);
+    }
+
+    private static int vLshift(int[] z, int zp, int[] a, int m, int d) {
+        int carry = 0;
+
+        assert 0 <= d && d < SHIFT;
+        for (int i = 0; i < m; i++) {
+            final long acc = (long)a[i] << d | carry;
+            z[zp + i] = (int)acc & MASK;
+            carry = (int)(acc >> SHIFT);
+        }
+        return carry;
+    }
+
+    private static int vRshift(int[] z, int[] a, int ap, int m, int d) {
+        int carry = 0;
+        final int mask = (1 << d) - 1;
+
+        assert 0 <= d && d < SHIFT;
+        for (int i = m; i-- > 0;) {
+            final long acc = (long)carry << SHIFT | a[ap + i];
+            carry = (int)acc & mask;
+            z[i] = (int)(acc >> d);
+        }
+        return carry;
     }
 
     private static boolean isSmallInt(int ival) {
