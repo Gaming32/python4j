@@ -19,7 +19,7 @@ public final class PyArguments {
     PyArguments(PyTuple kwNames, PyObject... argsAndKwargs) {
         if (kwNames == null) {
             args = argsAndKwargs;
-            kwargs = new LinkedHashMap<>(0);
+            kwargs = Map.of();
             return;
         }
         args = new PyObject[argsAndKwargs.length - kwNames.length()];

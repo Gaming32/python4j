@@ -381,6 +381,14 @@ public class PyUnicode extends PyObject {
         return data.length > 0;
     }
 
+    @Override
+    public PyObject __add__(PyObject other) {
+        if (other instanceof PyUnicode) {
+            return concat((PyUnicode)other);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
     private static PyUnicode fromUCS1(byte[] u, int size) {
         if (size == 0) {
             return GlobalStrings.empty;

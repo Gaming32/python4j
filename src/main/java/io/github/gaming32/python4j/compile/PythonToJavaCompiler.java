@@ -34,6 +34,22 @@ public class PythonToJavaCompiler {
 
     private static final Pattern SAFE_NAME_REGEX = Pattern.compile("[.;\\[\\/<>]");
     private static final String[] GENERIC_DESCRIPTOR_CACHE = new String[256];
+    private static final String[] NB_OP_NAMES = {
+        "add",
+        "and",
+        "floordiv",
+        "lshift",
+        "matmul",
+        "mul",
+        "mod",
+        "or",
+        "pow",
+        "rshift",
+        "sub",
+        "truediv",
+        "xor",
+    };
+
     static final String C_PYOBJECT = "io/github/gaming32/python4j/objects/PyObject";
     static final String C_PYTUPLE = "io/github/gaming32/python4j/objects/PyTuple";
     static final String C_PYCLASSINFO = "io/github/gaming32/python4j/runtime/annotation/PyClassInfo";
@@ -521,10 +537,9 @@ public class PythonToJavaCompiler {
                     meth.putstatic(C_PYRUNTIME, "kwNames", "L" + C_PYTUPLE + ";");
                     break;
 
-                case Opcode.CALL: {
+                case Opcode.CALL:
                     invokeRuntime(meth, "call", genericDescriptor(arg + 2));
                     break;
-                }
 
                 case Opcode.MAKE_FUNCTION: {
                     meth.invokedynamic(
@@ -562,6 +577,10 @@ public class PythonToJavaCompiler {
                     }
                     break;
                 }
+
+                case Opcode.BINARY_OP:
+                    meth.invokestatic(C_PYOPERATOR, NB_OP_NAMES[arg], genericDescriptor(2), false);
+                    break;
 
                 default:
                     throw new IllegalArgumentException("Unsupported opcode: " + Opcode.OP_NAME.get(insn.getOpcode()));

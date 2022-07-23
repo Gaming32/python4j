@@ -36,4 +36,110 @@ public class PyObject {
     public boolean __bool__() {
         return true;
     }
+
+    // region GENERATED CODE (see generate_nb_operator_overloads.py)
+    public PyObject __add__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __radd__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __and__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rand__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __floordiv__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rfloordiv__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __lshift__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rlshift__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __matmul__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rmatmul__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __mul__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rmul__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __mod__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rmod__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __or__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __ror__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __pow__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rpow__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rshift__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rrshift__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __sub__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rsub__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __truediv__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rtruediv__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __xor__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rxor__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+    // endregion GENERATED CODE
 }
