@@ -1,5 +1,7 @@
 package io.github.gaming32.python4j.objects;
 
+import java.util.Arrays;
+
 import io.github.gaming32.python4j.FloatInfo;
 
 public class PyLong extends PyVarObject {
@@ -15,9 +17,10 @@ public class PyLong extends PyVarObject {
 
     static {
         for (int i = -N_SMALL_NEG_INTS; i < N_SMALL_POS_INTS; i++) {
-            final PyLong val = new PyLong(1);
+            final PyLong val = new PyLong(0);
             if (i > 0) {
                 val.digits[0] = i;
+                val.size = 1;
             } else if (i < 0) {
                 val.digits[0] = -i;
                 val.size = -1;
@@ -42,7 +45,7 @@ public class PyLong extends PyVarObject {
      * precomputed.
      */
     private static final int EXP_WINDOW_SIZE = 5;
-    private static final int EXP_TABLE_LET = 1 << (EXP_WINDOW_SIZE - 1);
+    private static final int EXP_TABLE_LEN = 1 << (EXP_WINDOW_SIZE - 1);
 
     /**
      * Suppose the exponent has bit length e. All ways of doing this
@@ -69,7 +72,8 @@ public class PyLong extends PyVarObject {
     final int[] digits;
 
     PyLong(int size) {
-        digits = new int[this.size = size != 0 ? size : 1];
+        this.size = size;
+        digits = new int[size != 0 ? size : 1];
     }
 
     public static PyLong fromInt(int ival) {
@@ -610,6 +614,470 @@ public class PyLong extends PyVarObject {
             z.size = -z.size;
         }
         return z.normalize().maybeSmall();
+    }
+
+    public PyLong mul(PyLong b) {
+        if (isMediumValue() && b.isMediumValue()) {
+            return fromTwoDigits((long)mediumValue() * (long)b.mediumValue());
+        }
+
+        PyLong z = karatsubaMul(this, b);
+        if ((size ^ b.size) < 0) {
+            z = z.maybeInplaceNegate();
+        }
+        return z;
+    }
+
+    @Override
+    public PyObject __mul__(PyObject other) {
+        if (other instanceof PyLong) {
+            return mul((PyLong)other);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    private static PyLong karatsubaMul(PyLong a, PyLong b) {
+        int aSize = Math.abs(a.size);
+        int bSize = Math.abs(b.size);
+        PyLong ah = null, al = null, bh = null, bl = null, ret = null;
+        int shift; // the number of digits we split off
+
+        /* (ah*X+al)(bh*X+bl) = ah*bh*X*X + (ah*bl + al*bh)*X + al*bl
+         * Let k = (ah+al)*(bh+bl) = ah*bl + al*bh  + ah*bh + al*bl
+         * Then the original product is
+         *     ah*bh*X*X + (k - ah*bh - al*bl)*X + al*bl
+         * By picking X to be a power of 2, "*X" is just shifting, and it's
+         * been reduced to 3 multiplies on numbers half the size.
+         */
+
+        /* We want to split based on the larger number; fiddle so that b
+         * is largest.
+         */
+        if (aSize > bSize) {
+            final PyLong t1 = a;
+            a = b;
+            b = t1;
+
+            final int i = aSize;
+            aSize = bSize;
+            bSize = i;
+        }
+
+        /* Use gradeschool math when either number is too small. */
+        int i = a == b ? KARATSUBA_SQUARE_CUTOFF : KARATSUBA_CUTOFF;
+        if (aSize <= i) {
+            if (aSize == 0) {
+                return fromInt(0);
+            } else {
+                return mulGradescool(a, b);
+            }
+        }
+
+        if (2 * aSize <= bSize) {
+            return karatsubaLopsidedMul(a, b);
+        }
+
+        shift = bSize >> 1;
+        {
+            final PyLong[] split = karatsubaMulSplit(a, shift);
+            ah = split[0];
+            al = split[1];
+        }
+        assert ah.size > 0;
+
+        if (a == b) {
+            bh = ah;
+            bl = al;
+        } else {
+            final PyLong[] split = karatsubaMulSplit(b, shift);
+            bh = split[0];
+            bl = split[1];
+        }
+
+        /* The plan:
+         * 1. Allocate result space (asize + bsize digits:  that's always
+         *    enough).
+         * 2. Compute ah*bh, and copy into result at 2*shift.
+         * 3. Compute al*bl, and copy into result at 0.  Note that this
+         *    can't overlap with #2.
+         * 4. Subtract al*bl from the result, starting at shift.  This may
+         *    underflow (borrow out of the high digit), but we don't care:
+         *    we're effectively doing unsigned arithmetic mod
+         *    BASE**(sizea + sizeb), and so long as the *final* result fits,
+         *    borrows and carries out of the high digit can be ignored.
+         * 5. Subtract ah*bh from the result, starting at shift.
+         * 6. Compute (ah+al)*(bh+bl), and add it into the result starting
+         *    at shift.
+         */
+
+        // 1. Allocate result space.
+        ret = new PyLong(aSize + bSize);
+
+        // 2. t1 <- ah*bh, and copy into high digits of result.
+        PyLong t1 = karatsubaMul(ah, bh);
+        assert t1.size >= 0;
+        assert 2 * shift + t1.size <= ret.size;
+        System.arraycopy(t1.digits, 0, ret.digits, 2 * shift, t1.size);
+
+        // Zero-out the digits higher than the ah*bh copy.
+        i = ret.size - 2 * shift - t1.size;
+        if (i != 0) {
+            Arrays.fill(ret.digits, 2 * shift + t1.size, 2 * shift + t1.size + i, 0);
+        }
+
+        // 3. t2 <- al*bl, and copy into the low digits.
+        PyLong t2 = karatsubaMul(al, bl);
+        assert t2.size >= 0;
+        assert t2.size <= 2 * shift;
+        System.arraycopy(t2.digits, 0, ret.digits, 0, t2.size);
+
+        // Zero out remaining digits.
+        i = 2 * shift - t2.size;
+        if (i != 0) {
+            Arrays.fill(ret.digits, t2.size, t2.size + i, 0);
+        }
+
+        /* 4 & 5. Subtract ah*bh (t1) and al*bl (t2).  We do al*bl first
+         * because it's fresher in cache.
+         */
+        i = ret.size - shift;
+        vIsub(ret.digits, shift, i, t2.digits, t2.size);
+
+        vIsub(ret.digits, shift, i, t1.digits, t1.size);
+
+        t1 = add0(ah, al);
+        ah = al = null;
+
+        if (a == b) {
+            t2 = t1;
+        } else {
+            t2 = add0(bh, bl);
+        }
+        bh = bl = null;
+
+        final PyLong t3 = karatsubaMul(t1, t2);
+        assert t3.size >= 0;
+
+        // Add t3.
+        vIAdd(ret.digits, shift, i, t3.digits, t3.size);
+
+        return ret.normalize();
+    }
+
+    private static PyLong karatsubaLopsidedMul(PyLong a, PyLong b) {
+        final int aSize = Math.abs(a.size);
+        int bSize = Math.abs(b.size);
+        PyLong bSlice = null;
+
+        assert aSize > KARATSUBA_CUTOFF;
+        assert 2 * aSize <= bSize;
+
+        final PyLong ret = new PyLong(aSize + bSize);
+
+        bSlice = new PyLong(aSize);
+
+        int nbDone = 0;
+        while (bSize > 0) {
+            final int nbToUse = Math.min(bSize, aSize);
+
+            System.arraycopy(b.digits, nbDone, bSlice.digits, 0, nbToUse);
+            bSlice.size = nbToUse;
+            final PyLong product = karatsubaMul(a, bSlice);
+
+            vIAdd(ret.digits, nbDone, ret.size - nbDone, product.digits, product.size);
+
+            bSize -= nbToUse;
+            nbDone += nbToUse;
+        }
+
+        return ret.normalize();
+    }
+
+    private static int vIsub(int[] x, int xp, int m, int[] y, int n) {
+        int borrow = 0;
+
+        assert m >= n;
+        int i;
+        for (i = 0; i < n; i++) {
+            borrow = x[xp + i] - y[i] - borrow;
+            x[xp + i] = borrow & MASK;
+            borrow >>= SHIFT;
+            borrow &= 1;
+        }
+        for (; borrow != 0 && i < m; i++) {
+            borrow = x[xp + i] - borrow;
+            x[xp + i] = borrow & MASK;
+            borrow >>= SHIFT;
+            borrow &= 1;
+        }
+        return borrow;
+    }
+
+    private static int vIAdd(int[] x, int xp, int m, int[] y, int n) {
+        int carry = 0;
+
+        assert m >= n;
+        int i;
+        for (i = 0; i < n; i++) {
+            carry = x[xp + i] + y[i];
+            x[xp + i] = carry & MASK;
+            carry >>= SHIFT;
+            assert (carry & 1) == carry;
+        }
+        for (; carry != 0 && i < m; i++) {
+            carry += x[xp + i];
+            x[xp + i] = carry & MASK;
+            carry >>= SHIFT;
+            assert (carry & 1) == carry;
+        }
+        return carry;
+    }
+
+    private static PyLong mulGradescool(PyLong a, PyLong b) {
+        final int sizeA = Math.abs(a.size);
+        final int sizeB = Math.abs(b.size);
+
+        final PyLong z = new PyLong(sizeA + sizeB);
+
+        if (a == b) {
+            /* Efficient squaring per HAC, Algorithm 14.16:
+             * http://www.cacr.math.uwaterloo.ca/hac/about/chap14.pdf
+             * Gives slightly less than a 2x speedup when a == b,
+             * via exploiting that each entry in the multiplication
+             * pyramid appears twice (except for the size_a squares).
+             */
+            for (int i = 0; i < sizeA; i++) {
+                long f = a.digits[i];
+                int pz = i << 1;
+                int pa = i + 1;
+
+                long carry = z.digits[pz] + f * f;
+                z.digits[pz++] = (int)(carry & MASK);
+                carry >>= SHIFT;
+                assert carry <= MASK;
+
+                /* Now f is added in twice in each column of the
+                 * pyramid it appears.  Same as adding f<<1 once.
+                 */
+                f <<= 1L;
+                while (pa < sizeA) {
+                    carry += z.digits[pz] + a.digits[pa++] * f;
+                    z.digits[pz++] = (int)(carry & MASK);
+                    carry >>= SHIFT;
+                    assert carry <= MASK << 1;
+                }
+                if (carry != 0) {
+                    /* See comment below. pz points at the highest possible
+                     * carry position from the last outer loop iteration, so
+                     * *pz is at most 1.
+                     */
+                    assert z.digits[pz] <= 1;
+                    carry += z.digits[pz];
+                    z.digits[pz] = (int)(carry & MASK);
+                    carry >>= SHIFT;
+                    if (carry != 0) {
+                        /* If there's still a carry, it must be into a position
+                         * that still holds a 0. Where the base
+                         ^ B is 1 << PyLong_SHIFT, the last add was of a carry no
+                         * more than 2*B - 2 to a stored digit no more than 1.
+                         * So the sum was no more than 2*B - 1, so the current
+                         * carry no more than floor((2*B - 1)/B) = 1.
+                         */
+                        assert carry == 1;
+                        assert z.digits[pz + 1] == 0;
+                        z.digits[pz + 1] = (int)carry;
+                    }
+                }
+            }
+        } else { // a is not the same as b -- gradeschool int mult
+            for (int i = 0; i < sizeA; i++) {
+                long carry = 0;
+                final long f = a.digits[i];
+                int pz = i;
+                int pb = 0;
+
+                while (pb < sizeB) {
+                    carry += z.digits[pz] + b.digits[pb++] * f;
+                    z.digits[pz++] = (int)(carry & MASK);
+                    carry >>= SHIFT;
+                    assert carry <= MASK;
+                }
+                if (carry != 0) {
+                    z.digits[pz] += (int)(carry & MASK);
+                }
+                assert carry >> SHIFT == 0;
+            }
+        }
+        return z.normalize();
+    }
+
+    private static PyLong[] karatsubaMulSplit(PyLong n, int size) {
+        final int sizeN = Math.abs(n.size);
+
+        final int sizeLo = Math.min(sizeN, size);
+        final int sizeHi = sizeN - sizeLo;
+
+        final PyLong hi = new PyLong(sizeHi);
+        final PyLong lo = new PyLong(sizeLo);
+
+        System.arraycopy(n.digits, 0, lo.digits, 0, sizeLo);
+        System.arraycopy(n.digits, sizeLo, hi.digits, 0, sizeHi);
+
+        return new PyLong[] {hi, lo};
+    }
+
+    private PyLong maybeInplaceNegate() {
+        if (size == 1 || size == -1) {
+            if (isSmallInt(digits[0] * size)) {
+                return getSmallInt(digits[0] * -size);
+            }
+        }
+        return this;
+    }
+
+    public PyLong pow(PyLong b) {
+        return pow(b, null);
+    }
+
+    public PyLong pow(PyLong b, PyLong c) {
+        final boolean negativeOutput = false;
+
+        PyLong z = null;
+        PyLong a2 = null;
+
+        final PyLong[] table = new PyLong[EXP_TABLE_LEN];
+        @SuppressWarnings("unused") int numTableEntries = 0;
+
+        if (b.size < 0 && c == null) {
+            throw new UnsupportedOperationException("Not implemented: PyFloat_Type.tp_as_number->nb_power(v, w, x)");
+        }
+
+        if (c != null) {
+            throw new UnsupportedOperationException("Not implemented: c");
+        }
+
+        z = getSmallInt(1);
+
+        // MULT(x, y, r) = (r = x.mul(y))
+
+        int i = b.size;
+        int bi = i != 0 ? b.digits[i - 1] : 0;
+        if (i <= 1 && bi <= 3) {
+            if (bi >= 2) {
+                z = mul(this);
+                if (bi == 3) {
+                    z = z.mul(this);
+                }
+            } else if (bi == 1) {
+                z = mul(z);
+            }
+        } else if (i <= HUGE_EXP_CUTOFF / SHIFT) {
+            assert bi != 0;
+            z = this;
+            int bit;
+            for (bit = 2;; bit <<= 1) {
+                if (bit > bi) {
+                    assert (bi & bit) == 0;
+                    bit >>= 1;
+                    assert (bi & bit) != 0;
+                    break;
+                }
+            }
+            for (i--, bit >>= 1;;) {
+                for (; bit != 0; bit >>= 1) {
+                    z = z.mul(z);
+                    if ((bi & bit) != 0) {
+                        z = z.mul(this);
+                    }
+                }
+                if (--i < 0) break;
+                bi = b.digits[i];
+                bit = (int)1 << (SHIFT - 1);
+            }
+        } else {
+            table[0] = this;
+            numTableEntries = 1;
+            a2 = mul(this);
+            for (i = 1; i < EXP_TABLE_LEN; i++) {
+                table[i] = table[i - 1].mul(a2);
+                numTableEntries++;
+            }
+            a2 = null;
+
+            int pending = 0, blen = 0;
+            for (i = b.size - 1; i >= 0; i--) {
+                bi = b.digits[i];
+                for (int j = SHIFT - 1; j >= 0; j--) {
+                    final int bit = (bi >> j) & 1;
+                    pending = (pending << 1) | bit;
+                    if (pending != 0) {
+                        blen++;
+                        if (blen == EXP_WINDOW_SIZE) {
+                            // region ABSORB_PENDING
+                            int ntz = 0;
+                            assert pending != 0 && blen != 0;
+                            assert (pending >> (blen - 1)) != 0;
+                            assert pending >> blen == 0;
+                            while ((pending & 1) == 0) {
+                                ntz++;
+                                pending >>= 1;
+                            }
+                            assert ntz < blen;
+                            blen -= ntz;
+                            do {
+                                z = z.mul(z);
+                            } while (--blen != 0);
+                            z = z.mul(table[pending >> 1]);
+                            while (ntz-- > 0) {
+                                z = z.mul(z);
+                            }
+                            assert blen == 0;
+                            pending = 0;
+                            // endregion ABSORB_PENDING
+                        }
+                    } else {
+                        z = z.mul(z);
+                    }
+                }
+            }
+            if (pending != 0) {
+                // region ABSORB_PENDING
+                int ntz = 0;
+                assert pending != 0 && blen != 0;
+                assert (pending >> (blen - 1)) != 0;
+                assert pending >> blen == 0;
+                while ((pending & 1) == 0) {
+                    ntz++;
+                    pending >>= 1;
+                }
+                assert ntz < blen;
+                blen -= ntz;
+                do {
+                    z = z.mul(z);
+                } while (--blen != 0);
+                z = z.mul(table[pending >> 1]);
+                while (ntz-- > 0) {
+                    z = z.mul(z);
+                }
+                assert blen == 0;
+                pending = 0;
+                // endregion ABSORB_PENDING
+            }
+        }
+
+        if (negativeOutput && z.size != 0) {
+            z = z.sub(c);
+        }
+
+        return z;
+    }
+
+    @Override
+    public PyObject __pow__(PyObject other) {
+        if (other instanceof PyLong) {
+            return pow((PyLong)other, null);
+        }
+        return PyNotImplemented.NotImplemented;
     }
 
     private PyLong normalize() {

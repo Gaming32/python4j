@@ -17,7 +17,7 @@ import io.github.gaming32.python4j.pycfile.PycFile;
 public class CompilerTest {
     public static void main(String[] args) throws Throwable {
         final PycFile pycFile;
-        try (InputStream is = CompilerTest.class.getResourceAsStream("/simple_test.cpython-311.pyc")) {
+        try (InputStream is = CompilerTest.class.getResourceAsStream("/__pycache__/simple_test.cpython-311.pyc")) {
             pycFile = PycFile.read(is);
         }
         System.out.println(Disassemble.codeInfo(pycFile.getCode()));

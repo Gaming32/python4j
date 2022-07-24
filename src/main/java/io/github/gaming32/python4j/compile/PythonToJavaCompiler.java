@@ -21,7 +21,9 @@ import org.objectweb.asm.commons.InstructionAdapter;
 import io.github.gaming32.python4j.bytecode.Disassemble;
 import io.github.gaming32.python4j.bytecode.Disassemble.Instruction;
 import io.github.gaming32.python4j.bytecode.Opcode;
+import io.github.gaming32.python4j.objects.PyBool;
 import io.github.gaming32.python4j.objects.PyCodeObject;
+import io.github.gaming32.python4j.objects.PyEllipsisType;
 import io.github.gaming32.python4j.objects.PyNoneType;
 import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.pycfile.MarshalWriter;
@@ -700,6 +702,18 @@ public class PythonToJavaCompiler {
         final PyObject constant = codeObj.getCo_consts().getItem(constId);
         if (constant == PyNoneType.PyNone) {
             pushNone(meth);
+        } else if (constant == PyEllipsisType.PyEllipsis) {
+            meth.getstatic(
+                "io/github/gaming32/python4j/objects/PyEllipsisType",
+                "PyEllipsis",
+                "Lio/github/gaming32/python4j/objects/PyEllipsisType;"
+            );
+        } else if (constant instanceof PyBool) {
+            meth.getstatic(
+                "io/github/gaming32/python4j/objects/PyBool",
+                "Py" + constant,
+                "Lio/github/gaming32/python4j/objects/PyBool;"
+            );
         } else {
             ConstantDynamic condy = constantRefs.get(constant);
             if (condy == null) {
