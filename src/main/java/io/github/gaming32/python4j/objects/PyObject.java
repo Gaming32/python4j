@@ -141,5 +141,13 @@ public class PyObject {
     public PyObject __rxor__(PyObject other) {
         return PyNotImplemented.NotImplemented;
     }
+
+    public PyObject __divmod__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __rdivmod__(PyObject other) {
+        return PyNotImplemented.NotImplemented;
+    }
     // endregion GENERATED CODE
 }

@@ -229,5 +229,21 @@ public final class PyOperator extends JavaVirtualModule {
         }
         return result;
     }
+
+    @ModuleMethod("divmod")
+    public static PyObject pyDivmod(PyArguments args) {
+        return divmod(args.getArg(0), args.getArg(1));
+    }
+
+    public static PyObject divmod(PyObject left, PyObject right) {
+        PyObject result = left.__divmod__(right);
+        if (result == PyNotImplemented.NotImplemented) {
+            result = right.__rdivmod__(left);
+            if (result == PyNotImplemented.NotImplemented) {
+                throw new UnsupportedOperationException("Unsupported operand types for divmod(): '" + left.getClass().getSimpleName() + "' and '" + right.getClass().getSimpleName() + "'");
+            }
+        }
+        return result;
+    }
     // endregion GENERATED CODE
 }

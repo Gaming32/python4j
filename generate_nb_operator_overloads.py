@@ -14,6 +14,7 @@ opnames = (
     'sub',
     'truediv',
     'xor',
+    'divmod'
 )
 
 
@@ -46,6 +47,7 @@ print('// FOR: PyOperator.java')
 # }
 
 for (i, name) in enumerate(opnames):
+    opname: str = _nb_ops[i][1] if i < 13 else name + '()'
     print(f'@ModuleMethod("{name}")')
     print(f'public static PyObject py{name.capitalize()}(PyArguments args) {{')
     print(f'    return {name}(args.getArg(0), args.getArg(1));')
@@ -56,7 +58,7 @@ for (i, name) in enumerate(opnames):
     print(f'    if (result == PyNotImplemented.NotImplemented) {{')
     print(f'        result = right.__r{name}__(left);')
     print(f'        if (result == PyNotImplemented.NotImplemented) {{')
-    print(f'            throw new UnsupportedOperationException("Unsupported operand types for {_nb_ops[i][1]}: \'" + left.getClass().getSimpleName() + "\' and \'" + right.getClass().getSimpleName() + "\'");')
+    print(f'            throw new UnsupportedOperationException("Unsupported operand types for {opname}: \'" + left.getClass().getSimpleName() + "\' and \'" + right.getClass().getSimpleName() + "\'");')
     print(f'        }}')
     print(f'    }}')
     print(f'    return result;')

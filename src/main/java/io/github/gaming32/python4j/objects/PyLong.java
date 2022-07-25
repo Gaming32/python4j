@@ -1118,6 +1118,18 @@ public class PyLong extends PyVarObject {
         return PyNotImplemented.NotImplemented;
     }
 
+    public PyLong[] divmod(PyLong b) {
+        return lDivMod(this, b, true, true);
+    }
+
+    @Override
+    public PyObject __divmod__(PyObject other) {
+        if (other instanceof PyLong) {
+            return PyTuple.fromElements(divmod((PyLong)other));
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
     public PyLong rem(PyLong b) {
         final int sizeA = Math.abs(size), sizeB = Math.abs(b.size);
 
