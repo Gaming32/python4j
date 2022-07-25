@@ -25,7 +25,7 @@ public class CompilerTest {
         Disassemble.disassembleRecursive(pycFile.getCode(), System.out);
         System.out.println();
 
-        final PythonToJavaCompiler compiler = PythonToJavaCompiler.compile("simple_test", pycFile);
+        final PythonToJavaCompiler compiler = PythonToJavaCompiler.compileModule("simple_test", pycFile.getCode());
         final byte[] result = compiler.getResult().toByteArray();
         CheckClassAdapter.verify(new ClassReader(result), true, new PrintWriter(System.out));
         try (OutputStream os = new FileOutputStream("simple_test.class")) {

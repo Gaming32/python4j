@@ -63,7 +63,7 @@ public class PythonToJavaCompiler {
     private static final String METHOD_DESCRIPTOR = "([L" + C_PYOBJECT + ";)L" + C_PYOBJECT + ";";
 
     private final String moduleName;
-    private final PycFile pycFile;
+    private final PyCodeObject codeObj;
     private final String className;
     private final ClassWriter result;
     private final Set<String> usedNames = new HashSet<>();
@@ -75,9 +75,9 @@ public class PythonToJavaCompiler {
     private int depth;
     private boolean generatedTopLevel;
 
-    public PythonToJavaCompiler(String moduleName, PycFile pycFile) {
+    private PythonToJavaCompiler(String moduleName, PyCodeObject codeObj) {
         this.moduleName = moduleName;
-        this.pycFile = pycFile;
+        this.codeObj = codeObj;
         className = moduleName.replace('.', '/');
         result = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         initWriter();
@@ -92,12 +92,11 @@ public class PythonToJavaCompiler {
             "java/lang/Object",
             new String[] {"io/github/gaming32/python4j/runtime/PyModule"}
         );
-        result.visitSource(getLastPathPart(pycFile.getCode().getCo_filename().toString()), null);
+        result.visitSource(getLastPathPart(codeObj.getCo_filename().toString()), null);
         {
             final AnnotationVisitor av = result.visitAnnotation("L" + C_PYCLASSINFO + ";", true);
-            av.visit("metadata", pycFile.getMetadata());
             rootWriter.refAllCodeObjects();
-            rootWriter.writeObject(pycFile.getCode());
+            rootWriter.writeObject(codeObj);
             av.visit("codeObj", new String(rootWriter.getResult(), StandardCharsets.ISO_8859_1));
             av.visitEnd();
         }
@@ -199,9 +198,9 @@ public class PythonToJavaCompiler {
         }
     }
 
-    public static PythonToJavaCompiler compile(String moduleName, PycFile pycFile) {
-        final PythonToJavaCompiler compiler = new PythonToJavaCompiler(moduleName, pycFile);
-        compiler.compileCode(pycFile.getCode());
+    public static PythonToJavaCompiler compileModule(String moduleName, PyCodeObject codeObj) {
+        final PythonToJavaCompiler compiler = new PythonToJavaCompiler(moduleName, codeObj);
+        compiler.compileCode(codeObj);
         return compiler;
     }
 
@@ -209,7 +208,19 @@ public class PythonToJavaCompiler {
         return result;
     }
 
-    public void compileCode(PyCodeObject codeObj) {
+    public String getModuleName() {
+        return moduleName;
+    }
+
+    public PyCodeObject getCode() {
+        return codeObj;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    private void compileCode(PyCodeObject codeObj) {
         depth++;
         for (final PyObject constant : codeObj.getCo_consts()) {
             if (constant instanceof PyCodeObject) {
