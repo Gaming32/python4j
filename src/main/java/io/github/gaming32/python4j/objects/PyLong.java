@@ -1080,6 +1080,39 @@ public class PyLong extends PyVarObject {
         return PyNotImplemented.NotImplemented;
     }
 
+    public PyLong div(PyLong b) {
+        if (Math.abs(size) == 1 && Math.abs(b.size) == 1) {
+            return fastFloorDiv(this, b);
+        }
+
+        throw new UnsupportedOperationException("Not implemented: l_divmod((PyLongObject*)a, (PyLongObject*)b, &div, NULL)");
+    }
+
+    private static PyLong fastFloorDiv(PyLong a, PyLong b) {
+        final int left = a.digits[0];
+        final int right = b.digits[0];
+
+        assert Math.abs(a.size) == 1;
+        assert Math.abs(b.size) == 1;
+
+        final int div;
+        if (a.size == b.size) {
+            div = left / right;
+        } else {
+            div = -1 - (left - 1) / right;
+        }
+
+        return fromInt(div);
+    }
+
+    @Override
+    public PyObject __floordiv__(PyObject other) {
+        if (other instanceof PyLong) {
+            return div((PyLong)other);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
     private PyLong normalize() {
         int j = Math.abs(size);
         int i = j;

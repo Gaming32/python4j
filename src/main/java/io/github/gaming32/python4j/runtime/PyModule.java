@@ -8,9 +8,11 @@ import io.github.gaming32.python4j.objects.PyObject;
 public interface PyModule {
     String getName();
     PyObject getattr(String name);
-    void setattr(String name, PyObject value);
-    void delattr(String name);
+    boolean setattr(String name, PyObject value);
     String[] dir();
+
+    default void init() {
+    }
 
     default String[] all() {
         return null;

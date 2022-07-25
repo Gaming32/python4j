@@ -25,11 +25,8 @@ public final class EmptyModule implements PyModule {
     }
 
     @Override
-    public void setattr(String name, PyObject value) {
-    }
-
-    @Override
-    public void delattr(String name) {
+    public boolean setattr(String name, PyObject value) {
+        return false;
     }
 
     @Override

@@ -5,6 +5,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,12 +28,9 @@ public final class PyJavaVirtualModule implements PyModule {
         static final MethodType SETTER_INTERFACE_TYPE = MethodType.methodType(Consumer.class);
         static final MethodType SETTER_GENERIC_TYPE = MethodType.methodType(void.class, Object.class);
         static final MethodType SETTER_ACTUAL_TYPE = MethodType.methodType(void.class, PyObject.class);
-        static final MethodType DELETER_INTERFACE_TYPE = MethodType.methodType(Runnable.class);
-        static final MethodType DELETER_GENERIC_TYPE = MethodType.methodType(void.class);
 
         Supplier<PyObject> getter;
         Consumer<PyObject> setter;
-        Runnable deleter;
     }
 
     private static final MethodType FUNCTION_INTERFACE_TYPE = MethodType.methodType(Function.class);
@@ -42,12 +40,14 @@ public final class PyJavaVirtualModule implements PyModule {
     private static Map<String, PyModule> virtualModules = null;
 
     private final String name;
+    private final JavaVirtualModule internalModule;
     private final Map<String, Object> contents;
     private final String[] dir;
     private final String[] all;
 
     private PyJavaVirtualModule(JavaVirtualModule module) throws IllegalAccessException {
         name = module.getName();
+        internalModule = module;
         contents = new LinkedHashMap<>();
         computeContents(module.getClass(), module.lookup);
         dir = contents.keySet().toArray(new String[contents.size()]);
@@ -88,6 +88,7 @@ public final class PyJavaVirtualModule implements PyModule {
 
     private void computeContents(Class<? extends JavaVirtualModuleMarker> clazz, MethodHandles.Lookup lookup) throws IllegalAccessException {
         for (final Method method : clazz.getMethods()) {
+            if (!Modifier.isStatic(method.getModifiers())) continue;
             {
                 final ModuleMethod methodAnno = method.getAnnotation(ModuleMethod.class);
                 if (methodAnno != null) {
@@ -173,46 +174,53 @@ public final class PyJavaVirtualModule implements PyModule {
                     }
                 }
             }
-            {
-                final ModuleProperty.Deleter deleterAnno = method.getAnnotation(ModuleProperty.Deleter.class);
-                if (deleterAnno != null) {
-                    String name = deleterAnno.value();
-                    if (name.isEmpty()) {
-                        name = method.getName();
-                        if (name.length() > 6 && name.startsWith("delete")) {
-                            final String origName = name;
-                            name = Character.toString(Character.toLowerCase(name.charAt(6)));
-                            if (origName.length() > 7) {
-                                name += origName.substring(7);
-                            }
-                        }
-                    }
-                    try {
-                        ((PropertyWrapper)contents.computeIfAbsent(name, key -> new PropertyWrapper()))
-                            .deleter = (Runnable)LambdaMetafactory.metafactory(
-                                lookup,
-                                "run",
-                                PropertyWrapper.DELETER_INTERFACE_TYPE,
-                                PropertyWrapper.DELETER_GENERIC_TYPE,
-                                lookup.unreflect(method),
-                                PropertyWrapper.DELETER_GENERIC_TYPE
-                            ).getTarget().invokeExact();
-                    } catch (IllegalAccessException e) {
-                        throw e;
-                    } catch (Throwable t) {
-                        throw new Error(t);
-                    }
-                }
-            }
         }
         for (final Field field : clazz.getFields()) {
+            if (!Modifier.isStatic(field.getModifiers())) continue;
             final ModuleConstant anno = field.getAnnotation(ModuleConstant.class);
             if (anno != null) {
                 String name = anno.value();
                 if (name.isEmpty()) name = field.getName();
                 contents.put(name, (PyObject)field.get(null));
+                // try {
+                //     ((PropertyWrapper)contents.computeIfAbsent(name, key -> new PropertyWrapper()))
+                //         .getter = (Supplier<PyObject>)LambdaMetafactory.metafactory(
+                //             lookup,
+                //             "get",
+                //             PropertyWrapper.GETTER_INTERFACE_TYPE,
+                //             PropertyWrapper.GETTER_GENERIC_TYPE,
+                //             lookup.unreflectGetter(field),
+                //             PropertyWrapper.GETTER_ACTUAL_TYPE
+                //         ).getTarget().invokeExact();
+                // } catch (IllegalAccessException e) {
+                //     throw e;
+                // } catch (Throwable t) {
+                //     throw new Error(t);
+                // }
+                // if (!Modifier.isFinal(field.getModifiers())) {
+                //     try {
+                //         ((PropertyWrapper)contents.computeIfAbsent(name, key -> new PropertyWrapper()))
+                //             .setter = (Consumer<PyObject>)LambdaMetafactory.metafactory(
+                //                 lookup,
+                //                 "accept",
+                //                 PropertyWrapper.SETTER_INTERFACE_TYPE,
+                //                 PropertyWrapper.SETTER_GENERIC_TYPE,
+                //                 lookup.unreflectSetter(field),
+                //                 PropertyWrapper.SETTER_ACTUAL_TYPE
+                //             ).getTarget().invokeExact();
+                //     } catch (IllegalAccessException e) {
+                //         throw e;
+                //     } catch (Throwable t) {
+                //         throw new Error(t);
+                //     }
+                // }
             }
         }
+    }
+
+    @Override
+    public void init() {
+        internalModule.init();
     }
 
     @Override
@@ -226,27 +234,20 @@ public final class PyJavaVirtualModule implements PyModule {
         if (value instanceof PropertyWrapper) {
             return ((PropertyWrapper)value).getter.get();
         }
-        return (PyObject)value;
+        if (value != null) {
+            return (PyObject)value;
+        }
+        return internalModule.getattr(name);
     }
 
     @Override
-    public void setattr(String name, PyObject value) {
+    public boolean setattr(String name, PyObject value) {
         final Object attr = contents.get(name);
         if (attr instanceof PropertyWrapper) {
             ((PropertyWrapper)attr).setter.accept(value);
-            return;
+            return true;
         }
-        throw new IllegalArgumentException("Cannot assign to function " + name);
-    }
-
-    @Override
-    public void delattr(String name) {
-        final Object attr = contents.get(name);
-        if (attr instanceof PropertyWrapper) {
-            ((PropertyWrapper)attr).deleter.run();
-            return;
-        }
-        throw new IllegalArgumentException("Cannot delete function " + name);
+        return internalModule.setattr(name, value);
     }
 
     @Override

@@ -13,8 +13,8 @@ public final class PyArguments {
     private final Map<String, PyObject> kwargs;
 
     public PyArguments(PyObject[] args, Map<String, PyObject> kwargs) {
-        this.args = args;
-        this.kwargs = kwargs;
+        this.args = args != null ? args : new PyObject[0];
+        this.kwargs = kwargs != null ? kwargs : Collections.emptyMap();
     }
 
     PyArguments(PyTuple kwNames, PyObject... argsAndKwargs) {

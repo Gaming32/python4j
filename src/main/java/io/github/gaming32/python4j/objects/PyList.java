@@ -30,8 +30,9 @@ public class PyList extends PyObject implements SupportsToArray {
         return elements.size();
     }
 
+    @Override
     public PyObject[] toArray() {
-        return elements.toArray(PyObject[]::new);
+        return elements.toArray(new PyObject[elements.size()]);
     }
 
     public void extend(PyObject sequence) {

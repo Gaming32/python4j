@@ -18,12 +18,6 @@ public final class ModuleProperty {
         String value() default "";
     }
 
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.METHOD)
-    public static @interface Deleter {
-        String value() default "";
-    }
-
     private ModuleProperty() {
     }
 }

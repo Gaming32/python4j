@@ -2,6 +2,8 @@ package io.github.gaming32.python4j.runtime.javavirtualmodule;
 
 import java.lang.invoke.MethodHandles;
 
+import io.github.gaming32.python4j.objects.PyObject;
+
 public abstract class JavaVirtualModule implements JavaVirtualModuleMarker {
     private final String name;
     private String[] all = null;
@@ -21,5 +23,16 @@ public abstract class JavaVirtualModule implements JavaVirtualModuleMarker {
 
     protected String[] getAll() {
         return all;
+    }
+
+    protected void init() {
+    }
+
+    protected PyObject getattr(String attr) {
+        return null;
+    }
+
+    protected boolean setattr(String attr, PyObject value) {
+        return false;
     }
 }

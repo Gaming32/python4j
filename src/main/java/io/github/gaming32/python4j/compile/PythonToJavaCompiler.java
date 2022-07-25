@@ -73,6 +73,7 @@ public class PythonToJavaCompiler {
     private final Map<PyObject, ConstantDynamic> constantRefs = new HashMap<>();
     private final Map<PyCodeObject, String> methodNames = new IdentityHashMap<>();
     private int depth;
+    private boolean generatedTopLevel;
 
     public PythonToJavaCompiler(String moduleName, PycFile pycFile) {
         this.moduleName = moduleName;
@@ -83,7 +84,14 @@ public class PythonToJavaCompiler {
     }
 
     private void initWriter() {
-        result.visit(Opcodes.V11, Opcodes.ACC_PUBLIC, className, null, "java/lang/Object", null);
+        result.visit(
+            Opcodes.V11,
+            Opcodes.ACC_PUBLIC,
+            className,
+            null,
+            "java/lang/Object",
+            new String[] {"io/github/gaming32/python4j/runtime/PyModule"}
+        );
         result.visitSource(getLastPathPart(pycFile.getCode().getCo_filename().toString()), null);
         {
             final AnnotationVisitor av = result.visitAnnotation("L" + C_PYCLASSINFO + ";", true);
@@ -94,29 +102,98 @@ public class PythonToJavaCompiler {
             av.visitEnd();
         }
         result.visitField(
-            Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC,
+            Opcodes.ACC_PRIVATE,
             "$globals",
             "Ljava/util/Map;",
             "Ljava/util/Map<Ljava/lang/String;L" + C_PYOBJECT + ";>;",
             null
         );
-        {
-            final MethodVisitor mv = result.visitMethod(Opcodes.ACC_PRIVATE, "<init>", "()V", null, null);
+        /* public <init>() */ {
+            final MethodVisitor mv = result.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
             mv.visitCode();
             mv.visitVarInsn(Opcodes.ALOAD, 0);
             mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitTypeInsn(Opcodes.NEW, "java/util/LinkedHashMap");
+            mv.visitInsn(Opcodes.DUP);
+            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/util/LinkedHashMap", "<init>", "()V", false);
+            mv.visitFieldInsn(Opcodes.PUTFIELD, className, "$globals", "Ljava/util/Map;");
             mv.visitInsn(Opcodes.RETURN);
             mv.visitMaxs(-1, -1);
             mv.visitEnd();
         }
-        {
-            final MethodVisitor mv = result.visitMethod(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
+        /* public static void main(String[]) */ {
+            final MethodVisitor mv = result.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
             mv.visitCode();
-            mv.visitTypeInsn(Opcodes.NEW, "java/util/LinkedHashMap");
+            mv.visitTypeInsn(Opcodes.NEW, className);
             mv.visitInsn(Opcodes.DUP);
-            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/util/LinkedHashMap", "<init>", "()V", false);
-            mv.visitFieldInsn(Opcodes.PUTSTATIC, className, "$globals", "Ljava/util/Map;");
+            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, className, "<init>", "()V", false);
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, "init", "()V", false);
             mv.visitInsn(Opcodes.RETURN);
+            mv.visitMaxs(-1, -1);
+            mv.visitEnd();
+        }
+        /* public String getName() */ {
+            final MethodVisitor mv = result.visitMethod(Opcodes.ACC_PUBLIC, "getName", "()Ljava/lang/String;", null, null);
+            mv.visitCode();
+            mv.visitLdcInsn(moduleName);
+            mv.visitInsn(Opcodes.ARETURN);
+            mv.visitMaxs(-1, -1);
+            mv.visitEnd();
+        }
+        /* public String[] dir() */ {
+            final MethodVisitor mv = result.visitMethod(Opcodes.ACC_PUBLIC, "dir", "()[Ljava/lang/String;", null, null);
+            mv.visitCode();
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitFieldInsn(Opcodes.GETFIELD, className, "$globals", "Ljava/util/Map;");
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, C_PYRUNTIME, "moduleDir", "(Ljava/util/Map;)[Ljava/lang/String;", false);
+            mv.visitInsn(Opcodes.ARETURN);
+            mv.visitMaxs(-1, -1);
+            mv.visitEnd();
+        }
+        /* public PyObject getattr(String) */ {
+            final MethodVisitor mv = result.visitMethod(
+                Opcodes.ACC_PUBLIC,
+                "getattr",
+                "(Ljava/lang/String;)L" + C_PYOBJECT + ";",
+                null, null
+            );
+            mv.visitCode();
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitFieldInsn(Opcodes.GETFIELD, className, "$globals", "Ljava/util/Map;");
+            mv.visitVarInsn(Opcodes.ALOAD, 1);
+            mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+            mv.visitTypeInsn(Opcodes.CHECKCAST, C_PYOBJECT);
+            mv.visitInsn(Opcodes.ARETURN);
+            mv.visitMaxs(-1, -1);
+            mv.visitEnd();
+        }
+        /* public boolean setattr(String, PyObject) */ {
+            final MethodVisitor mv = result.visitMethod(
+                Opcodes.ACC_PUBLIC,
+                "setattr",
+                "(Ljava/lang/String;L" + C_PYOBJECT + ";)Z",
+                null, null
+            );
+            mv.visitCode();
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitFieldInsn(Opcodes.GETFIELD, className, "$globals", "Ljava/util/Map;");
+            mv.visitVarInsn(Opcodes.ALOAD, 1);
+            mv.visitVarInsn(Opcodes.ALOAD, 2);
+            mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, "java/util/Map", "set", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true);
+            mv.visitInsn(Opcodes.POP);
+            mv.visitInsn(Opcodes.ICONST_1);
+            mv.visitInsn(Opcodes.IRETURN);
+            mv.visitMaxs(-1, -1);
+            mv.visitEnd();
+        }
+        /* public String[] all() */ {
+            final MethodVisitor mv = result.visitMethod(Opcodes.ACC_PUBLIC, "all", "()[Ljava/lang/String;", null, null);
+            mv.visitCode();
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitFieldInsn(Opcodes.GETFIELD, className, "$globals", "Ljava/util/Map;");
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, C_PYRUNTIME, "moduleAll", "(Ljava/util/Map;)[Ljava/lang/String;", false);
+            mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(-1, -1);
             mv.visitEnd();
         }
@@ -142,7 +219,7 @@ public class PythonToJavaCompiler {
         final String methodName = safeDeduppedName(codeObj.getCo_qualname().toString());
         methodNames.put(codeObj, methodName);
         final MethodVisitor mv = result.visitMethod(
-            Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+            Opcodes.ACC_PUBLIC,
             methodName,
             METHOD_DESCRIPTOR,
             null, null
@@ -159,7 +236,7 @@ public class PythonToJavaCompiler {
         meth.mark(startLabel);
         meth.aconst(Type.getObjectType(className));
         meth.iconst(refId);
-        meth.visitVarInsn(Opcodes.ALOAD, 0);
+        meth.visitVarInsn(Opcodes.ALOAD, 1);
         meth.invokestatic(
             C_PYFRAME,
             "push",
@@ -174,11 +251,11 @@ public class PythonToJavaCompiler {
                 meth.dup();
                 meth.iconst(i);
                 meth.visitInsn(Opcodes.AALOAD);
-                meth.visitVarInsn(Opcodes.ASTORE, i);
+                meth.visitVarInsn(Opcodes.ASTORE, i + 1);
             }
             meth.iconst(i);
             meth.visitInsn(Opcodes.AALOAD);
-            meth.visitVarInsn(Opcodes.ASTORE, i);
+            meth.visitVarInsn(Opcodes.ASTORE, i + 1);
         }
         final Map<Integer, Label> jumpLabels = new HashMap<>();
         PyCodeObject lastCodeObject = null;
@@ -512,14 +589,14 @@ public class PythonToJavaCompiler {
                     break;
 
                 case Opcode.LOAD_FAST:
-                    meth.visitVarInsn(Opcodes.ALOAD, arg);
+                    meth.visitVarInsn(Opcodes.ALOAD, arg + 1);
                     break;
 
                 case Opcode.DELETE_FAST:
                     meth.aconst(null);
                 case Opcode.STORE_FAST:
                     meth.dup();
-                    meth.visitVarInsn(Opcodes.ASTORE, arg);
+                    meth.visitVarInsn(Opcodes.ASTORE, arg + 1);
                     meth.iconst(arg);
                     meth.invokestatic(
                         C_PYFRAME,
@@ -544,9 +621,10 @@ public class PythonToJavaCompiler {
                     break;
 
                 case Opcode.MAKE_FUNCTION: {
+                    meth.visitVarInsn(Opcodes.ALOAD, 0);
                     meth.invokedynamic(
                         "apply",
-                        "()Ljava/util/function/Function;",
+                        "(L" + className + ";)Ljava/util/function/Function;",
                         new Handle(
                             Opcodes.H_INVOKESTATIC,
                             "java/lang/invoke/LambdaMetafactory",
@@ -557,7 +635,7 @@ public class PythonToJavaCompiler {
                         new Object[] {
                             Type.getMethodType("(Ljava/lang/Object;)Ljava/lang/Object;"),
                             new Handle(
-                                Opcodes.H_INVOKESTATIC,
+                                Opcodes.H_INVOKEVIRTUAL,
                                 className,
                                 methodNames.get(lastCodeObject),
                                 METHOD_DESCRIPTOR,
@@ -603,25 +681,20 @@ public class PythonToJavaCompiler {
         mv.visitMaxs(-1, -1);
         mv.visitEnd();
         depth--;
-        if (depth == 0 && codeObj.getSumArgCount() == 0) {
-            generateMainMethod(methodName);
+        if (!generatedTopLevel && depth == 0 && codeObj.getSumArgCount() == 0) {
+            generatedTopLevel = true;
+            generateInitMethod(methodName);
         }
     }
 
-    private void generateMainMethod(String moduleMethodName) {
-        final MethodVisitor mv = result.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
-        mv.visitCode();
+    private void generateInitMethod(String methodName) {
+        final MethodVisitor mv = result.visitMethod(Opcodes.ACC_PUBLIC, "init", "()V", null, null);
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitInsn(Opcodes.ICONST_0);
         mv.visitTypeInsn(Opcodes.ANEWARRAY, C_PYOBJECT);
-        mv.visitMethodInsn(
-            Opcodes.INVOKESTATIC,
-            className,
-            moduleMethodName, // Probably "_module_0", but you can never be too careful
-            "([L" + C_PYOBJECT + ";)L" + C_PYOBJECT + ";",
-            false
-        );
-        pushNone(mv);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, methodName, "([L" + C_PYOBJECT + ";)L" + C_PYOBJECT + ";", false);
         final Label successLabel = new Label();
+        pushNone(mv);
         mv.visitJumpInsn(Opcodes.IF_ACMPEQ, successLabel);
         mv.visitTypeInsn(Opcodes.NEW, "java/lang/AssertionError");
         mv.visitInsn(Opcodes.DUP);
@@ -684,7 +757,8 @@ public class PythonToJavaCompiler {
     }
 
     private void getGlobals(InstructionAdapter meth) {
-        meth.getstatic(className, "$globals", "Ljava/util/Map;");
+        meth.visitVarInsn(Opcodes.ALOAD, 0);
+        meth.getfield(className, "$globals", "Ljava/util/Map;");
     }
 
     private static void invokeRuntime(InstructionAdapter meth, String name, String desc) {

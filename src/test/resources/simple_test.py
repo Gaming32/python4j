@@ -1,2 +1,5 @@
-a = 2
-print(a ** 333)
+def main():
+    a = 10
+    print(a // 3)
+
+main()

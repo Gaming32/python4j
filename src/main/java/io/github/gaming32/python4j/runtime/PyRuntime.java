@@ -14,6 +14,7 @@ import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.objects.PySet;
 import io.github.gaming32.python4j.objects.PyTuple;
 import io.github.gaming32.python4j.objects.PyUnicode;
+import io.github.gaming32.python4j.objects.SupportsToArray;
 import io.github.gaming32.python4j.objects.WrappedPyException;
 import io.github.gaming32.python4j.runtime.javavirtualmodule.PyJavaVirtualModule;
 import io.github.gaming32.python4j.runtime.modules.EmptyModule;
@@ -52,6 +53,32 @@ public final class PyRuntime {
             }
         }
         return global;
+    }
+
+    public static String[] moduleDir(Map<String, PyObject> globals) {
+        final PyObject dirMethod = globals.get("__dir__");
+        if (dirMethod == null) {
+            return globals.keySet().toArray(new String[globals.size()]);
+        }
+        final PyObject[] pyResult = ((SupportsToArray)dirMethod.__call__(new PyArguments(null))).toArray();
+        final String[] result = new String[pyResult.length];
+        for (int i = 0; i < pyResult.length; i++) {
+            result[i] = pyResult[i].toString();
+        }
+        return result;
+    }
+
+    public static String[] moduleAll(Map<String, PyObject> globals) {
+        final PyObject allList = globals.get("__all__");
+        if (allList == null) {
+            return null;
+        }
+        final PyObject[] pyResult = ((SupportsToArray)allList).toArray();
+        final String[] result = new String[pyResult.length];
+        for (int i = 0; i < pyResult.length; i++) {
+            result[i] = pyResult[i].toString();
+        }
+        return result;
     }
 
     public static PyObject buildTuple() {
