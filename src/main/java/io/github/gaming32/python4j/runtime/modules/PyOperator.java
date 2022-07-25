@@ -245,5 +245,83 @@ public final class PyOperator extends JavaVirtualModule {
         }
         return result;
     }
+
+    @ModuleMethod("lt")
+    public static PyObject pyLt(PyArguments args) {
+        return lt(args.getArg(0), args.getArg(1));
+    }
+
+    public static PyObject lt(PyObject left, PyObject right) {
+        PyObject result = left.__lt__(right);
+        if (result == PyNotImplemented.NotImplemented) {
+            throw new UnsupportedOperationException("Unsupported operand types for <: '" + left.getClass().getSimpleName() + "' and '" + right.getClass().getSimpleName() + "'");
+        }
+        return result;
+    }
+
+    @ModuleMethod("le")
+    public static PyObject pyLe(PyArguments args) {
+        return le(args.getArg(0), args.getArg(1));
+    }
+
+    public static PyObject le(PyObject left, PyObject right) {
+        PyObject result = left.__le__(right);
+        if (result == PyNotImplemented.NotImplemented) {
+            throw new UnsupportedOperationException("Unsupported operand types for <=: '" + left.getClass().getSimpleName() + "' and '" + right.getClass().getSimpleName() + "'");
+        }
+        return result;
+    }
+
+    @ModuleMethod("eq")
+    public static PyObject pyEq(PyArguments args) {
+        return eq(args.getArg(0), args.getArg(1));
+    }
+
+    public static PyObject eq(PyObject left, PyObject right) {
+        PyObject result = left.__eq__(right);
+        if (result == PyNotImplemented.NotImplemented) {
+            throw new UnsupportedOperationException("Unsupported operand types for ==: '" + left.getClass().getSimpleName() + "' and '" + right.getClass().getSimpleName() + "'");
+        }
+        return result;
+    }
+
+    @ModuleMethod("ne")
+    public static PyObject pyNe(PyArguments args) {
+        return ne(args.getArg(0), args.getArg(1));
+    }
+
+    public static PyObject ne(PyObject left, PyObject right) {
+        PyObject result = left.__ne__(right);
+        if (result == PyNotImplemented.NotImplemented) {
+            throw new UnsupportedOperationException("Unsupported operand types for !=: '" + left.getClass().getSimpleName() + "' and '" + right.getClass().getSimpleName() + "'");
+        }
+        return result;
+    }
+
+    @ModuleMethod("ge")
+    public static PyObject pyGe(PyArguments args) {
+        return ge(args.getArg(0), args.getArg(1));
+    }
+
+    public static PyObject ge(PyObject left, PyObject right) {
+        PyObject result = left.__ge__(right);
+        if (result == PyNotImplemented.NotImplemented) {
+            throw new UnsupportedOperationException("Unsupported operand types for >=: '" + left.getClass().getSimpleName() + "' and '" + right.getClass().getSimpleName() + "'");
+        }
+        return result;
+    }
+
+    @ModuleMethod("gt")
+    public static PyObject pyGt(PyArguments args) {
+        return gt(args.getArg(0), args.getArg(1));
+    }
+
+    public static PyObject gt(PyObject left, PyObject right) {
+        PyObject result = left.__gt__(right);
+        if (result == PyNotImplemented.NotImplemented) {
+            throw new UnsupportedOperationException("Unsupported operand types for >: '" + left.getClass().getSimpleName() + "' and '" + right.getClass().getSimpleName() + "'");
+        }
+        return result;
+    }
     // endregion GENERATED CODE
 }

@@ -51,6 +51,14 @@ public class PythonToJavaCompiler {
         "truediv",
         "xor",
     };
+    private static final String[] CMP_OP_NAMES = {
+        "lt",
+        "le",
+        "eq",
+        "ne",
+        "ge",
+        "gt",
+    };
 
     static final String C_PYOBJECT = "io/github/gaming32/python4j/objects/PyObject";
     static final String C_PYTUPLE = "io/github/gaming32/python4j/objects/PyTuple";
@@ -333,11 +341,13 @@ public class PythonToJavaCompiler {
                     case 0:
                         throw new IllegalArgumentException("Cannot SWAP off the stack");
                     case 1:
-                        meth.swap();
                         break;
                     case 2:
                         meth.swap();
-                        meth.dupX1();
+                        break;
+                    case 3:
+                        meth.swap();
+                        meth.dup2X1();
                         meth.pop2();
                         break;
                     default:
@@ -673,12 +683,17 @@ public class PythonToJavaCompiler {
                     meth.invokestatic(C_PYOPERATOR, NB_OP_NAMES[arg], genericDescriptor(2), false);
                     break;
 
+                case Opcode.COMPARE_OP:
+                    meth.invokestatic(C_PYOPERATOR, CMP_OP_NAMES[arg], genericDescriptor(2), false);
+                    break;
+
                 default:
                     throw new IllegalArgumentException("Unsupported opcode: " + Opcode.OP_NAME.get(insn.getOpcode()));
             }
         }
         final Label endLabel = new Label();
         meth.mark(endLabel);
+        meth.visitLocalVariable("this", "L" + className + ";", null, startLabel, endLabel, 0);
         for (int i = 0; i < codeObj.getCo_nlocals(); i++) {
             meth.visitLocalVariable(
                 codeObj.getCo_varnames().getItem(i).toString(),
@@ -686,7 +701,7 @@ public class PythonToJavaCompiler {
                 null,
                 startLabel,
                 endLabel,
-                i
+                i + 1
             );
         }
         mv.visitMaxs(-1, -1);

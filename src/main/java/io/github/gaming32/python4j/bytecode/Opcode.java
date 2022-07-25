@@ -148,6 +148,13 @@ public final class Opcode {
     public static final int POP_JUMP_BACKWARD_IF_NONE = 174;
     public static final int POP_JUMP_BACKWARD_IF_FALSE = 175;
     public static final int POP_JUMP_BACKWARD_IF_TRUE = 176;
+
+    public static final int CMP_LT = 0;
+    public static final int CMP_LE = 1;
+    public static final int CMP_EQ = 2;
+    public static final int CMP_NE = 3;
+    public static final int CMP_GE = 4;
+    public static final int CMP_GT = 5;
     // endregion GENERATED CODE
 
     static {
@@ -550,5 +557,17 @@ public final class Opcode {
     }
 
     private Opcode() {
+    }
+
+    public static boolean comparisonToBoolean(int comparison, int op) {
+        switch (op) {
+            case CMP_EQ: return comparison == 0;
+            case CMP_NE: return comparison != 0;
+            case CMP_LT: return comparison < 0;
+            case CMP_GT: return comparison > 0;
+            case CMP_LE: return comparison <= 0;
+            case CMP_GE: return comparison >= 0;
+            default: throw new IllegalArgumentException("comparisonToBoolean op should be an Opcode.CMP_* constant");
+        }
     }
 }

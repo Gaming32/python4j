@@ -7,13 +7,13 @@ public final class PyBool extends PyLong {
     public static final PyUnicode FALSE_REPR = PyUnicode.fromString("False");
 
     private PyBool(int v) {
-        super(1);
+        super(v);
         digits[0] = v;
     }
 
     @Override
     public PyUnicode __repr__() {
-        return digits[0] != 0 ? TRUE_REPR : FALSE_REPR;
+        return __bool__() ? TRUE_REPR : FALSE_REPR;
     }
 
     public boolean booleanValue() {

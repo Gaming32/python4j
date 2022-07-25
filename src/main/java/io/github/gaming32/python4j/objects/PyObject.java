@@ -1,5 +1,6 @@
 package io.github.gaming32.python4j.objects;
 
+import io.github.gaming32.python4j.bytecode.Opcode;
 import io.github.gaming32.python4j.runtime.PyArguments;
 
 public class PyObject {
@@ -35,6 +36,10 @@ public class PyObject {
 
     public boolean __bool__() {
         return true;
+    }
+
+    public PyObject __richcmp__(PyObject other, int op) {
+        return PyNotImplemented.NotImplemented;
     }
 
     // region GENERATED CODE (see generate_nb_operator_overloads.py)
@@ -148,6 +153,30 @@ public class PyObject {
 
     public PyObject __rdivmod__(PyObject other) {
         return PyNotImplemented.NotImplemented;
+    }
+
+    public PyObject __lt__(PyObject other) {
+        return __richcmp__(other, Opcode.CMP_LT);
+    }
+
+    public PyObject __le__(PyObject other) {
+        return __richcmp__(other, Opcode.CMP_LE);
+    }
+
+    public PyObject __eq__(PyObject other) {
+        return __richcmp__(other, Opcode.CMP_EQ);
+    }
+
+    public PyObject __ne__(PyObject other) {
+        return __richcmp__(other, Opcode.CMP_NE);
+    }
+
+    public PyObject __ge__(PyObject other) {
+        return __richcmp__(other, Opcode.CMP_GE);
+    }
+
+    public PyObject __gt__(PyObject other) {
+        return __richcmp__(other, Opcode.CMP_GT);
     }
     // endregion GENERATED CODE
 }

@@ -1,1 +1,6 @@
-print(divmod(12345678901234567890, 10 ** 12))
+def fib(i: 'int') -> 'int':
+    if i < 2:
+        return i
+    return fib(i - 1) + fib(i - 2)
+
+print(fib(10))

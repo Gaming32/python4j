@@ -3,8 +3,9 @@ package io.github.gaming32.python4j.objects;
 import java.util.Arrays;
 
 import io.github.gaming32.python4j.FloatInfo;
+import io.github.gaming32.python4j.bytecode.Opcode;
 
-public class PyLong extends PyVarObject {
+public class PyLong extends PyVarObject implements Comparable<PyLong> {
     static final int SHIFT = 30;
     private static final int DECIMAL_SHIFT = 9;
     private static final int DECIMAL_BASE = 1000000000;
@@ -160,7 +161,7 @@ public class PyLong extends PyVarObject {
 
     @Override
     public boolean __bool__() {
-        return digits.length != 1 || digits[0] != 0;
+        return size != 0;
     }
 
     @Override
@@ -1355,6 +1356,32 @@ public class PyLong extends PyVarObject {
             pout[size] = quotient;
         }
         return remainder;
+    }
+
+    @Override
+    public int compareTo(PyLong b) {
+        final int sign = size - b.size;
+        if (sign == 0) {
+            int i = Math.abs(size);
+            int diff = 0;
+            while (--i >= 0) {
+                diff = digits[i] - b.digits[i];
+                if (diff != 0) {
+                    break;
+                }
+            }
+            return size < 0 ? -diff : diff;
+        }
+        return sign;
+    }
+
+    @Override
+    public PyObject __richcmp__(PyObject other, int op) {
+        if (other instanceof PyLong) {
+            final int result = this == other ? 0 : compareTo((PyLong)other);
+            return PyBool.fromBoolean(Opcode.comparisonToBoolean(result, op));
+        }
+        return PyNotImplemented.NotImplemented;
     }
 
     private PyLong normalize() {
