@@ -1,6 +1,7 @@
 package io.github.gaming32.python4j.runtime.javavirtualmodule;
 
 import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandleProxies;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
@@ -86,6 +87,7 @@ public final class PyJavaVirtualModule implements PyModule {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void computeContents(Class<? extends JavaVirtualModuleMarker> clazz, MethodHandles.Lookup lookup) throws IllegalAccessException {
         for (final Method method : clazz.getMethods()) {
             if (!Modifier.isStatic(method.getModifiers())) continue;
@@ -181,39 +183,18 @@ public final class PyJavaVirtualModule implements PyModule {
             if (anno != null) {
                 String name = anno.value();
                 if (name.isEmpty()) name = field.getName();
-                contents.put(name, (PyObject)field.get(null));
-                // try {
-                //     ((PropertyWrapper)contents.computeIfAbsent(name, key -> new PropertyWrapper()))
-                //         .getter = (Supplier<PyObject>)LambdaMetafactory.metafactory(
-                //             lookup,
-                //             "get",
-                //             PropertyWrapper.GETTER_INTERFACE_TYPE,
-                //             PropertyWrapper.GETTER_GENERIC_TYPE,
-                //             lookup.unreflectGetter(field),
-                //             PropertyWrapper.GETTER_ACTUAL_TYPE
-                //         ).getTarget().invokeExact();
-                // } catch (IllegalAccessException e) {
-                //     throw e;
-                // } catch (Throwable t) {
-                //     throw new Error(t);
-                // }
-                // if (!Modifier.isFinal(field.getModifiers())) {
-                //     try {
-                //         ((PropertyWrapper)contents.computeIfAbsent(name, key -> new PropertyWrapper()))
-                //             .setter = (Consumer<PyObject>)LambdaMetafactory.metafactory(
-                //                 lookup,
-                //                 "accept",
-                //                 PropertyWrapper.SETTER_INTERFACE_TYPE,
-                //                 PropertyWrapper.SETTER_GENERIC_TYPE,
-                //                 lookup.unreflectSetter(field),
-                //                 PropertyWrapper.SETTER_ACTUAL_TYPE
-                //             ).getTarget().invokeExact();
-                //     } catch (IllegalAccessException e) {
-                //         throw e;
-                //     } catch (Throwable t) {
-                //         throw new Error(t);
-                //     }
-                // }
+                if (Modifier.isFinal(field.getModifiers())) {
+                    contents.put(name, field.get(null));
+                } else {
+                    ((PropertyWrapper)contents.computeIfAbsent(name, key -> new PropertyWrapper()))
+                        .getter = (Supplier<PyObject>)MethodHandleProxies
+                            .asInterfaceInstance(Supplier.class, lookup.unreflectGetter(field));
+                    if (!Modifier.isFinal(field.getModifiers())) {
+                        ((PropertyWrapper)contents.computeIfAbsent(name, key -> new PropertyWrapper()))
+                            .setter = (Consumer<PyObject>)MethodHandleProxies
+                                .asInterfaceInstance(Consumer.class, lookup.unreflectSetter(field));
+                    }
+                }
             }
         }
     }
