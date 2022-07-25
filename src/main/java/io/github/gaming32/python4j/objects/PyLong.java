@@ -249,7 +249,7 @@ public class PyLong extends PyVarObject {
     }
 
     private static int bitLengthDigit(int digit) {
-        return 31 - Integer.numberOfLeadingZeros(digit);
+        return 32 - Integer.numberOfLeadingZeros(digit);
     }
 
     private static int vLshift(int[] z, int zp, int[] a, int m, int d) {
@@ -288,6 +288,14 @@ public class PyLong extends PyVarObject {
     private static PyLong getSmallInt(int ival) {
         assert isSmallInt(ival);
         return SMALL_INTS[N_SMALL_NEG_INTS + ival];
+    }
+
+    private static PyLong getZero() {
+        return SMALL_INTS[N_SMALL_NEG_INTS];
+    }
+
+    private static PyLong getOne() {
+        return SMALL_INTS[N_SMALL_NEG_INTS + 1];
     }
 
     private static boolean isMediumInt(int x) {
@@ -932,6 +940,7 @@ public class PyLong extends PyVarObject {
                 return getSmallInt(digits[0] * -size);
             }
         }
+        size = -size;
         return this;
     }
 
@@ -1080,12 +1089,108 @@ public class PyLong extends PyVarObject {
         return PyNotImplemented.NotImplemented;
     }
 
-    public PyLong div(PyLong b) {
+    public PyLong floordiv(PyLong b) {
         if (Math.abs(size) == 1 && Math.abs(b.size) == 1) {
             return fastFloorDiv(this, b);
         }
 
-        throw new UnsupportedOperationException("Not implemented: l_divmod((PyLongObject*)a, (PyLongObject*)b, &div, NULL)");
+        final PyLong[] divmod = lDivMod(this, b, true, false);
+        return divmod[0];
+    }
+
+    @Override
+    public PyObject __floordiv__(PyObject other) {
+        if (other instanceof PyLong) {
+            return floordiv((PyLong)other);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyLong mod(PyLong b) {
+        return lMod(this, b);
+    }
+
+    @Override
+    public PyObject __mod__(PyObject other) {
+        if (other instanceof PyLong) {
+            return mod((PyLong)other);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyLong rem(PyLong b) {
+        final int sizeA = Math.abs(size), sizeB = Math.abs(b.size);
+
+        if (sizeB == 0) {
+            throw new ArithmeticException("Integer modulo by zero");
+        }
+        if (sizeA < sizeB || (sizeA == sizeB && digits[sizeA - 1] < b.digits[sizeB - 1])) {
+            return this;
+        }
+        PyLong result;
+        if (sizeB == 1) {
+            return rem1(this, b.digits[0]);
+        } else {
+            result = xDivRem(this, b)[1];
+        }
+        if (size < 0 && result.size != 0) {
+            result = result.maybeInplaceNegate();
+        }
+        return result;
+    }
+
+    private static PyLong rem1(PyLong a, int n) {
+        final int size = Math.abs(a.size);
+
+        assert n > 0 && n <= MASK;
+        return fromInt(inplaceRem1(a.digits, size, n));
+    }
+
+    private static int inplaceRem1(int[] pin, int size, int n) {
+        long rem = 0;
+
+        assert n > 0 && n <= MASK;
+        while (--size >= 0) {
+            rem = ((rem << SHIFT) | pin[size]) % n;
+        }
+        return (int)rem;
+    }
+
+    private static PyLong lMod(PyLong v, PyLong w) {
+        if (Math.abs(v.size) == 1 && Math.abs(w.size) == 1) {
+            return fastMod(v, w);
+        }
+
+        PyLong mod = v.rem(w);
+        if (
+            (mod.size < 0 && w.size > 0) ||
+            (mod.size > 0 && w.size < 0)
+        ) {
+            mod = mod.add(w);
+        }
+        return mod;
+    }
+
+    private static PyLong[] lDivMod(PyLong v, PyLong w, boolean divInterested, boolean modInterested) {
+        final PyLong[] result = new PyLong[2];
+        if (Math.abs(v.size) == 1 && Math.abs(w.size) == 1) {
+            if (divInterested) {
+                result[0] = fastFloorDiv(v, w);
+            }
+            if (modInterested) {
+                result[1] = fastMod(v, w);
+            }
+            return result;
+        }
+        longDivRem(v, w, result);
+        if (
+            (result[1].size < 0 && w.size > 0) ||
+            (result[1].size > 0 && w.size < 0)
+        ) {
+            result[1] = result[1].add(w);
+            result[0] = result[0].sub(getOne());
+        }
+        return result;
     }
 
     private static PyLong fastFloorDiv(PyLong a, PyLong b) {
@@ -1105,12 +1210,139 @@ public class PyLong extends PyVarObject {
         return fromInt(div);
     }
 
-    @Override
-    public PyObject __floordiv__(PyObject other) {
-        if (other instanceof PyLong) {
-            return div((PyLong)other);
+    private static PyLong fastMod(PyLong a, PyLong b) {
+        final int left = a.digits[0];
+        final int right = b.digits[0];
+
+        assert Math.abs(a.size) == 1;
+        assert Math.abs(b.size) == 1;
+
+        final int mod;
+        if (a.size == b.size) {
+            mod = left % right;
+        } else {
+            mod = right - 1 - (left - 1) % right;
         }
-        return PyNotImplemented.NotImplemented;
+
+        return fromInt(mod * b.size);
+    }
+
+    private static void longDivRem(PyLong a, PyLong b, PyLong[] result) {
+        final int sizeA = Math.abs(a.size), sizeB = Math.abs(b.size);
+        PyLong z;
+
+        if (sizeB == 0) {
+            throw new ArithmeticException("Integer division or modulo by zero");
+        }
+        if (sizeA < sizeB || (sizeA == sizeB && a.digits[sizeA - 1] < b.digits[sizeB - 1])) {
+            result[1] = a;
+            result[0] = getZero();
+            return;
+        }
+        if (sizeB == 1) {
+            final int[] rem = new int[1];
+            z = divRem1(a, b.digits[0], rem);
+            result[1] = fromInt(rem[0]);
+        } else {
+            final PyLong[] divrem = xDivRem(a, b);
+            z = divrem[0];
+            result[1] = divrem[1].maybeSmall();
+        }
+        if (a.size < 0 != b.size < 0) {
+            z = z.maybeInplaceNegate();
+        }
+        if (a.size < 0 && result[1].size != 0) {
+            result[1] = result[1].maybeInplaceNegate();
+        }
+        result[0] = z.maybeSmall();
+    }
+
+    private static PyLong[] xDivRem(PyLong v1, PyLong w1) {
+        int sizeV = Math.abs(v1.size);
+        final int sizeW = Math.abs(w1.size);
+        assert sizeV >= sizeW && sizeW >= 2;
+        final PyLong v = new PyLong(sizeV + 1);
+        final PyLong w = new PyLong(sizeW + 1);
+
+        final int d = SHIFT - bitLengthDigit(w1.digits[sizeW - 1]);
+        int carry = vLshift(w.digits, 0, w1.digits, sizeW, d);
+        assert carry == 0;
+        carry = vLshift(v.digits, 0, v1.digits, sizeV, d);
+        if (carry != 0 || v.digits[sizeV - 1] >= w.digits[sizeW - 1]) {
+            v.digits[sizeV] = carry;
+            sizeV++;
+        }
+
+        final int k = sizeV - sizeW;
+        assert k >= 0;
+        final PyLong a = new PyLong(k);
+        final int[] v0 = v.digits;
+        final int[] w0 = w.digits;
+        final int wm1 = w0[sizeW - 1];
+        final int wm2 = w0[sizeW - 2];
+        for (int vk = k, ak = k; vk-- > 0;) {
+            final int vtop = v0[vk + sizeW];
+            assert vtop <= wm1;
+            final long vv = ((long)vtop << SHIFT) | v0[vk + sizeW - 1];
+            int q = (int)(vv / wm1);
+            int r = (int)(vv % wm1);
+            while ((long)wm2 * q > (((long)r << SHIFT) | v0[vk + sizeW - 2])) {
+                q--;
+                r += wm1;
+                if (r >= BASE) {
+                    break;
+                }
+            }
+            assert q <= BASE;
+
+            int zhi = 0;
+            for (int i = 0; i < sizeW; i++) {
+                final long z = v0[vk + i] + zhi - (long)q * (long)w0[i];
+                v0[vk + i] = (int)z & MASK;
+                zhi = (int)(z >> SHIFT);
+            }
+
+            assert vtop + zhi == -1 || vtop + zhi == 0;
+            if (vtop + zhi < 0) {
+                carry = 0;
+                for (int i = 0; i < sizeW; i++) {
+                    carry += v0[vk + i] + w0[i];
+                    v0[vk + i] = carry & MASK;
+                    carry >>= SHIFT;
+                }
+                q--;
+            }
+
+            assert q < BASE;
+            a.digits[--ak] = q;
+        }
+
+        carry = vRshift(w0, v0, 0, sizeW, d);
+        assert carry == 0;
+
+        return new PyLong[] {a.normalize(), w.normalize()};
+    }
+
+    private static PyLong divRem1(PyLong a, int n, int[] prem) {
+        final int size = Math.abs(a.size);
+
+        assert n > 0 && n <= MASK;
+        final PyLong z = new PyLong(size);
+        prem[0] = inplaceDivRem1(z.digits, a.digits, size, n);
+        return z.normalize();
+    }
+
+    private static int inplaceDivRem1(int[] pout, int[] pin, int size, int n) {
+        int remainder = 0;
+
+        assert n > 0 && n <= MASK;
+        while (--size >= 0) {
+            final long dividend = ((long)remainder << SHIFT) | pin[size];
+            final int quotient = (int)(dividend / n);
+            remainder = (int)(dividend % n);
+            pout[size] = quotient;
+        }
+        return remainder;
     }
 
     private PyLong normalize() {
