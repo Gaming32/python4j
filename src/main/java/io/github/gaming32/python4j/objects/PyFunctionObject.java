@@ -100,7 +100,7 @@ public final class PyFunctionObject extends PyObject {
         if (kwargs != null) {
             putKwargs(actualArgs, kwargs);
         }
-        for (int i = 0; i < firstDefault; i++) {
+        for (int i = 0; i < actualArgs.length; i++) {
             if (actualArgs[i] == null) {
                 throw new WrappedPyException(
                     new PyException(
