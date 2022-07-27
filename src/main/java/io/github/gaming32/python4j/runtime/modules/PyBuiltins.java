@@ -41,14 +41,16 @@ public final class PyBuiltins extends JavaVirtualModule {
     public static PyObject print(PyArguments args) {
         final String sep = getStringArgOrDefault(args, "sep", " ");
         boolean first = true;
+        final StringBuilder result = new StringBuilder();
         for (final PyObject arg : args.getArgs()) {
             if (!first) {
-                System.out.print(sep);
+                result.append(sep);
             }
-            System.out.print(arg.__str__());
+            result.append(arg.__str__());
             first = false;
         }
-        System.out.print(getStringArgOrDefault(args, "end", System.lineSeparator()));
+        result.append(getStringArgOrDefault(args, "end", System.lineSeparator()));
+        System.out.print(result.toString());
         return PyNoneType.PyNone;
     }
 
