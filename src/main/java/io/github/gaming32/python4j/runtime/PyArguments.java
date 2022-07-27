@@ -1,6 +1,5 @@
 package io.github.gaming32.python4j.runtime;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -14,13 +13,13 @@ public final class PyArguments {
 
     public PyArguments(PyObject[] args, Map<String, PyObject> kwargs) {
         this.args = args != null ? args : new PyObject[0];
-        this.kwargs = kwargs != null ? kwargs : Collections.emptyMap();
+        this.kwargs = kwargs;
     }
 
     PyArguments(PyTuple kwNames, PyObject... argsAndKwargs) {
         if (kwNames == null) {
             args = argsAndKwargs;
-            kwargs = Collections.emptyMap();
+            kwargs = null;
             return;
         }
         args = new PyObject[argsAndKwargs.length - kwNames.length()];
@@ -48,18 +47,22 @@ public final class PyArguments {
     }
 
     public PyObject getKwarg(String key) {
+        if (kwargs == null) return null;
         return kwargs.get(key);
     }
 
     public PyObject getKwarg(String key, PyObject def) {
+        if (kwargs == null) return def;
         return kwargs.getOrDefault(key, def);
     }
 
     public boolean hasKwarg(String key) {
+        if (kwargs == null) return false;
         return kwargs.containsKey(key);
     }
 
     public int getNKwargs() {
+        if (kwargs == null) return 0;
         return kwargs.size();
     }
 

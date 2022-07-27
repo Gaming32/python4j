@@ -1,6 +1,5 @@
 package io.github.gaming32.python4j.objects;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -11,7 +10,6 @@ public final class PyFunctionObject extends PyObject {
     private final PyCodeObject code;
     private final Function<PyObject[], PyObject> actualFunction;
     private final PyObject[] defaults;
-    private final Map<String, PyObject> kwDefaults;
     private final Map<String, PyObject> annotations;
 
     private final int firstDefault;
@@ -26,8 +24,7 @@ public final class PyFunctionObject extends PyObject {
     ) {
         this.code = code;
         this.actualFunction = actualFunction;
-        this.defaults = defaults;
-        this.kwDefaults = kwDefaults;
+        this.defaults = new PyObject[code.getSumArgCount()];
         this.annotations = annotations;
 
         firstDefault = code.getCo_argcount() - defaults.length;
@@ -35,6 +32,12 @@ public final class PyFunctionObject extends PyObject {
         final PyTuple co_varnames = code.getCo_varnames();
         for (int i = code.getCo_posonlyargcount(); i < code.getSumArgCount(); i++) {
             kwPositions.put(co_varnames.getItem(i).toString(), i);
+        }
+        if (defaults != null) {
+            System.arraycopy(defaults, 0, this.defaults, firstDefault, defaults.length);
+        }
+        for (final var entry : kwDefaults.entrySet()) {
+            this.defaults[kwPositions.get(entry.getKey())] = entry.getValue();
         }
     }
 
@@ -47,15 +50,7 @@ public final class PyFunctionObject extends PyObject {
     ) {
         this.code = code;
         this.actualFunction = actualFunction;
-        this.defaults = defaults == null ? new PyObject[0] : defaults.toArray();
-        if (kwDefaults != null) {
-            this.kwDefaults = new HashMap<>(kwDefaults.length() + 1);
-            for (final var entry : kwDefaults.getElements().entrySet()) {
-                this.kwDefaults.put(entry.getKey().toString(), entry.getValue());
-            }
-        } else {
-            this.kwDefaults = Collections.emptyMap();
-        }
+        this.defaults = new PyObject[code.getSumArgCount()];
         if (annotations != null) {
             this.annotations = new HashMap<>((annotations.length() >> 1) + 1);
             for (int i = 0; i < annotations.length(); i += 2) {
@@ -65,11 +60,19 @@ public final class PyFunctionObject extends PyObject {
             this.annotations = null;
         }
 
-        firstDefault = code.getCo_argcount() - this.defaults.length;
+        firstDefault = code.getCo_argcount() - (defaults != null ? defaults.length() : 0);
         kwPositions = new HashMap<>(code.getSumArgCount() - code.getCo_posonlyargcount() + 1);
         final PyTuple co_varnames = code.getCo_varnames();
         for (int i = code.getCo_posonlyargcount(); i < code.getSumArgCount(); i++) {
             kwPositions.put(co_varnames.getItem(i).toString(), i);
+        }
+        if (defaults != null) {
+            System.arraycopy(defaults.toArray(), 0, this.defaults, firstDefault, defaults.length());
+        }
+        if (kwDefaults != null) {
+            for (final var entry : kwDefaults.getElements().entrySet()) {
+                this.defaults[kwPositions.get(entry.getKey().toString())] = entry.getValue();
+            }
         }
     }
 
@@ -85,23 +88,29 @@ public final class PyFunctionObject extends PyObject {
         return defaults;
     }
 
-    public Map<String, PyObject> getKwDefaults() {
-        return kwDefaults;
-    }
-
     public Map<String, PyObject> getAnnotations() {
         return annotations;
     }
 
     @Override
     public PyObject __call__(PyArguments args) {
-        final PyObject[] actualArgs = new PyObject[code.getSumArgCount()];
+        final PyObject[] actualArgs = defaults.clone();
         System.arraycopy(args.getArgs(), 0, actualArgs, 0, args.getNArgs());
-        for (int i = args.getNArgs(); i < code.getCo_argcount(); i++) {
-            actualArgs[i] = i < firstDefault ? null : defaults[i - firstDefault];
+        final var kwargs = args.getKwargs();
+        if (kwargs != null) {
+            putKwargs(actualArgs, kwargs);
         }
-        putKwargs(actualArgs, kwDefaults);
-        putKwargs(actualArgs, args.getKwargs());
+        for (int i = 0; i < firstDefault; i++) {
+            if (actualArgs[i] == null) {
+                throw new WrappedPyException(
+                    new PyException(
+                        PyTuple.fromElements(
+                            PyUnicode.fromString("Missing required argument " + code.getCo_varnames().getItem(i))
+                        )
+                    )
+                );
+            }
+        }
         return actualFunction.apply(actualArgs);
     }
 
