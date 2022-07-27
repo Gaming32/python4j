@@ -1,5 +1,10 @@
 package io.github.gaming32.python4j.runtime.modules;
 
+import java.io.BufferedOutputStream;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 import io.github.gaming32.python4j.objects.PyBool;
 import io.github.gaming32.python4j.objects.PyNoneType;
 import io.github.gaming32.python4j.objects.PyNotImplemented;
@@ -37,20 +42,25 @@ public final class PyBuiltins extends JavaVirtualModule {
         return value;
     }
 
+    private static BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(FileDescriptor.out), 512);
+
     @ModuleMethod
-    public static PyObject print(PyArguments args) {
-        final String sep = getStringArgOrDefault(args, "sep", " ");
-        boolean first = true;
-        final StringBuilder result = new StringBuilder();
-        for (final PyObject arg : args.getArgs()) {
-            if (!first) {
-                result.append(sep);
+    public static PyObject print(PyArguments args) throws IOException {
+        PyObject[] obj = args.getArgs();
+        if (obj.length > 1) {
+            final String sep = getStringArgOrDefault(args, "sep", " ");
+            final StringBuilder sb = new StringBuilder(obj[0].__str__().toString());
+            for (int i = 1; i < obj.length; i++) {
+                sb.append(sep).append(obj[i].__str__());
             }
-            result.append(arg.__str__());
-            first = false;
+            sb.append(getStringArgOrDefault(args, "end", System.lineSeparator()));
+            out.write(sb.toString().getBytes());
+        } else if (obj.length > 0) {
+            out.write(new StringBuilder(obj[0].__str__().toString()).append(getStringArgOrDefault(args, "end", System.lineSeparator())).toString().getBytes());
+        } else {
+            out.write(getStringArgOrDefault(args, "end", System.lineSeparator()).getBytes());
         }
-        result.append(getStringArgOrDefault(args, "end", System.lineSeparator()));
-        System.out.print(result.toString());
+        out.flush();
         return PyNoneType.PyNone;
     }
 
