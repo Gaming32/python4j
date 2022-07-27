@@ -42,6 +42,7 @@ public class PyTuple extends PyObject implements Iterable<PyObject>, SupportsToA
         return elements.length;
     }
 
+    @Override
     public Iterator<PyObject> iterator() {
         return new Iterator<>() {
             private int index = 0;
@@ -62,6 +63,7 @@ public class PyTuple extends PyObject implements Iterable<PyObject>, SupportsToA
         };
     }
 
+    @Override
     public PyObject[] toArray() {
         return elements.clone();
     }

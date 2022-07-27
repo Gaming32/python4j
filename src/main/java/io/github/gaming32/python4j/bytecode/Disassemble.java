@@ -485,7 +485,7 @@ public final class Disassemble {
                     argVal = PyLong.fromInt(jArgVal);
                     argRepr = "to " + argVal.__repr__();
                 } else if (Opcode.HAS_LOCAL.contains(deop) || Opcode.HAS_FREE.contains(deop)) {
-                    @SuppressWarnings({ "unchecked", "rawtypes" })
+                    @SuppressWarnings({"unchecked", "rawtypes"})
                     final Map.Entry<PyObject, String> nameInfo = getNameInfo(arg, (IntFunction)varnameFromOparg);
                     argVal = nameInfo.getKey();
                     argRepr = nameInfo.getValue();

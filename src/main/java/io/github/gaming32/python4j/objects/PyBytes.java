@@ -107,12 +107,11 @@ public class PyBytes extends PyVarObject {
         return hash = hash(bytes);
     }
 
-
     public static long hash(byte[] bytes) {
         if (bytes.length == 0) {
             return 0L;
         }
-        final long h = PyHash.HASH_FUNCTION.getHash().apply(bytes);
+        final long h = PyHash.HASH_FUNCTION.getHash().applyAsLong(bytes);
         return h == -1L ? -2L : h;
     }
 }

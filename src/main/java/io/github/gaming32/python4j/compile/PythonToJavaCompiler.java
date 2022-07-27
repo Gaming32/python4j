@@ -1,5 +1,6 @@
 package io.github.gaming32.python4j.compile;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,8 +27,8 @@ import io.github.gaming32.python4j.objects.PyCodeObject;
 import io.github.gaming32.python4j.objects.PyEllipsisType;
 import io.github.gaming32.python4j.objects.PyNoneType;
 import io.github.gaming32.python4j.objects.PyObject;
+import io.github.gaming32.python4j.objects.PyTuple;
 import io.github.gaming32.python4j.pycfile.MarshalWriter;
-import io.github.gaming32.python4j.pycfile.PycFile;
 
 public class PythonToJavaCompiler {
     private static enum ExtraGenerateKind {
@@ -79,7 +80,7 @@ public class PythonToJavaCompiler {
     private final MarshalWriter reusableWriter = new MarshalWriter();
     private final Map<Map.Entry<ExtraGenerateKind, Integer>, String> extraGenerate = new HashMap<>();
     private final Map<PyObject, ConstantDynamic> constantRefs = new HashMap<>();
-    private final Map<PyCodeObject, String> methodNames = new IdentityHashMap<>();
+    private final Map<PyCodeObject, String> methodNames = new IdentityHashMap<>(1);
     private int depth;
     private boolean generatedTopLevel;
 
@@ -94,7 +95,7 @@ public class PythonToJavaCompiler {
     private void initWriter() {
         result.visit(
             Opcodes.V11,
-            Opcodes.ACC_PUBLIC,
+            Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
             className,
             null,
             "java/lang/Object",
@@ -229,6 +230,7 @@ public class PythonToJavaCompiler {
     }
 
     private void compileCode(PyCodeObject codeObj) {
+        if (methodNames.containsKey(codeObj)) return;
         depth++;
         for (final PyObject constant : codeObj.getCo_consts()) {
             if (constant instanceof PyCodeObject) {
@@ -238,7 +240,7 @@ public class PythonToJavaCompiler {
         final String methodName = safeDeduppedName(codeObj.getCo_qualname().toString());
         methodNames.put(codeObj, methodName);
         final MethodVisitor mv = result.visitMethod(
-            Opcodes.ACC_PUBLIC,
+            Opcodes.ACC_PRIVATE,
             methodName,
             METHOD_DESCRIPTOR,
             null, null
@@ -694,9 +696,10 @@ public class PythonToJavaCompiler {
         final Label endLabel = new Label();
         meth.mark(endLabel);
         meth.visitLocalVariable("this", "L" + className + ";", null, startLabel, endLabel, 0);
+        final PyTuple co_varnames = codeObj.getCo_varnames();
         for (int i = 0; i < codeObj.getCo_nlocals(); i++) {
             meth.visitLocalVariable(
-                codeObj.getCo_varnames().getItem(i).toString(),
+                co_varnames.getItem(i).toString(),
                 "L" + C_PYOBJECT + ";",
                 null,
                 startLabel,
@@ -718,7 +721,7 @@ public class PythonToJavaCompiler {
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitInsn(Opcodes.ICONST_0);
         mv.visitTypeInsn(Opcodes.ANEWARRAY, C_PYOBJECT);
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, methodName, "([L" + C_PYOBJECT + ";)L" + C_PYOBJECT + ";", false);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, methodName, METHOD_DESCRIPTOR, false);
         final Label successLabel = new Label();
         pushNone(mv);
         mv.visitJumpInsn(Opcodes.IF_ACMPEQ, successLabel);
@@ -846,6 +849,8 @@ public class PythonToJavaCompiler {
     }
 
     private static String getLastPathPart(String path) {
-        return path.substring(Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1);
+        return File.separatorChar == '/' ?
+            path.substring(path.lastIndexOf('/') + 1) :
+            path.substring(Math.max(path.lastIndexOf('/'), path.lastIndexOf(File.separatorChar)) + 1);
     }
 }

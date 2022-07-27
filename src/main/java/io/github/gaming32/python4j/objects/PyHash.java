@@ -2,26 +2,26 @@ package io.github.gaming32.python4j.objects;
 
 import java.security.SecureRandom;
 import java.util.OptionalLong;
-import java.util.function.Function;
+import java.util.function.ToLongFunction;
 
 import io.github.gaming32.python4j.UnsafeUtil;
 import sun.misc.Unsafe;
 
 public final class PyHash {
     public static final class HashFunctionDefinition {
-        private final Function<byte[], Long> hash;
+        private final ToLongFunction<byte[]> hash;
         private final String name;
         private final int hashBits;
         private final int seedBits;
 
-        public HashFunctionDefinition(Function<byte[], Long> hash, String name, int hashBits, int seedBits) {
+        public HashFunctionDefinition(ToLongFunction<byte[]> hash, String name, int hashBits, int seedBits) {
             this.hash = hash;
             this.name = name;
             this.hashBits = hashBits;
             this.seedBits = seedBits;
         }
 
-        public Function<byte[], Long> getHash() {
+        public ToLongFunction<byte[]> getHash() {
             return hash;
         }
 

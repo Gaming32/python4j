@@ -1,6 +1,6 @@
 from opcode import _nb_ops  # type: ignore
 
-oplist = [
+binoplist = [
     'add',
     'and',
     'floordiv',
@@ -31,7 +31,7 @@ cmpops: list[tuple[str, str]] = [
 
 print('// FOR: PyObject.java')
 
-for name in oplist:
+for name in binoplist:
     for subname in ('', 'r'):
         print(f'public PyObject __{subname}{name}__(PyObject other) {{')
         print(f'    return PyNotImplemented.NotImplemented;')
@@ -63,7 +63,7 @@ print('// FOR: PyOperator.java')
 #     return result;
 # }
 
-for (name, label) in zip(oplist, oplabels):
+for (name, label) in zip(binoplist, oplabels):
     print(f'@ModuleMethod("{name}")')
     print(f'public static PyObject py{name.capitalize()}(PyArguments args) {{')
     print(f'    return {name}(args.getArg(0), args.getArg(1));')

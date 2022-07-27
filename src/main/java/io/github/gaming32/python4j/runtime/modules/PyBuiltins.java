@@ -1,5 +1,6 @@
 package io.github.gaming32.python4j.runtime.modules;
 
+import io.github.gaming32.python4j.objects.PyBool;
 import io.github.gaming32.python4j.objects.PyNoneType;
 import io.github.gaming32.python4j.objects.PyNotImplemented;
 import io.github.gaming32.python4j.objects.PyObject;
@@ -14,6 +15,10 @@ public final class PyBuiltins extends JavaVirtualModule {
     public static final PyNoneType None = PyNoneType.PyNone;
     @ModuleConstant
     public static final PyNotImplemented NotImplemented = PyNotImplemented.NotImplemented;
+    @ModuleConstant
+    public static final PyBool True = PyBool.PyTrue;
+    @ModuleConstant
+    public static final PyBool False = PyBool.PyFalse;
 
     public PyBuiltins() {
         super("builtins");

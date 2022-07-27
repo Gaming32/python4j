@@ -78,7 +78,7 @@ public final class PyJavaVirtualModule implements PyModule {
                         throw new RuntimeException(e);
                     }
                 })
-                .collect(Collectors.toMap(m -> m.getName(), m -> m));
+                .collect(Collectors.toMap(m -> m.getName(), Function.identity()));
         } catch (RuntimeException e) {
             if (e.getCause() instanceof IllegalAccessException) {
                 throw (IllegalAccessException)e.getCause();
@@ -89,6 +89,26 @@ public final class PyJavaVirtualModule implements PyModule {
 
     @SuppressWarnings("unchecked")
     private void computeContents(Class<? extends JavaVirtualModuleMarker> clazz, MethodHandles.Lookup lookup) throws IllegalAccessException {
+        for (final Field field : clazz.getFields()) {
+            if (!Modifier.isStatic(field.getModifiers())) continue;
+            final ModuleConstant anno = field.getAnnotation(ModuleConstant.class);
+            if (anno != null) {
+                String name = anno.value();
+                if (name.isEmpty()) name = field.getName();
+                if (Modifier.isFinal(field.getModifiers())) {
+                    contents.put(name, field.get(null));
+                } else {
+                    ((PropertyWrapper)contents.computeIfAbsent(name, key -> new PropertyWrapper()))
+                        .getter = (Supplier<PyObject>)MethodHandleProxies
+                            .asInterfaceInstance(Supplier.class, lookup.unreflectGetter(field));
+                    if (!Modifier.isFinal(field.getModifiers())) {
+                        ((PropertyWrapper)contents.computeIfAbsent(name, key -> new PropertyWrapper()))
+                            .setter = (Consumer<PyObject>)MethodHandleProxies
+                                .asInterfaceInstance(Consumer.class, lookup.unreflectSetter(field));
+                    }
+                }
+            }
+        }
         for (final Method method : clazz.getMethods()) {
             if (!Modifier.isStatic(method.getModifiers())) continue;
             {
@@ -173,26 +193,6 @@ public final class PyJavaVirtualModule implements PyModule {
                         throw e;
                     } catch (Throwable t) {
                         throw new Error(t);
-                    }
-                }
-            }
-        }
-        for (final Field field : clazz.getFields()) {
-            if (!Modifier.isStatic(field.getModifiers())) continue;
-            final ModuleConstant anno = field.getAnnotation(ModuleConstant.class);
-            if (anno != null) {
-                String name = anno.value();
-                if (name.isEmpty()) name = field.getName();
-                if (Modifier.isFinal(field.getModifiers())) {
-                    contents.put(name, field.get(null));
-                } else {
-                    ((PropertyWrapper)contents.computeIfAbsent(name, key -> new PropertyWrapper()))
-                        .getter = (Supplier<PyObject>)MethodHandleProxies
-                            .asInterfaceInstance(Supplier.class, lookup.unreflectGetter(field));
-                    if (!Modifier.isFinal(field.getModifiers())) {
-                        ((PropertyWrapper)contents.computeIfAbsent(name, key -> new PropertyWrapper()))
-                            .setter = (Consumer<PyObject>)MethodHandleProxies
-                                .asInterfaceInstance(Consumer.class, lookup.unreflectSetter(field));
                     }
                 }
             }
