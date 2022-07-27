@@ -279,11 +279,11 @@ public class PyLong extends PyVarObject implements Comparable<PyLong> {
     }
 
     private static boolean isSmallInt(int ival) {
-        return -N_SMALL_NEG_INTS <= ival && ival <= N_SMALL_POS_INTS;
+        return -N_SMALL_NEG_INTS <= ival && ival < N_SMALL_POS_INTS;
     }
 
     private static boolean isSmallInt(long ival) {
-        return -N_SMALL_NEG_INTS <= ival && ival <= N_SMALL_POS_INTS;
+        return -N_SMALL_NEG_INTS <= ival && ival < N_SMALL_POS_INTS;
     }
 
     private static PyLong getSmallInt(int ival) {
