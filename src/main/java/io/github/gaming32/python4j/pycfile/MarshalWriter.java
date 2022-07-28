@@ -332,7 +332,7 @@ public final class MarshalWriter {
                 elementDatas.add(elementData);
                 elementRefs.put(elementData, element);
             }
-            elementDatas.sort(Arrays::compare);
+            elementDatas.sort(Arrays::compareUnsigned);
             for (final byte[] elementData : elementDatas) {
                 writeObject(elementRefs.get(elementData));
             }

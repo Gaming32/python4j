@@ -27,7 +27,7 @@ public class PyObject {
 
     @Override
     public final int hashCode() {
-        return Long.hashCode(__hash__());
+        return Long.hashCode(this instanceof HashableAnyway ? ((HashableAnyway)this).hashAnyway() : __hash__());
     }
 
     public PyObject __call__(PyArguments args) {

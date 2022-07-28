@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArray {
+public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArray, HashableAnyway {
     final Set<PyObject> elements;
 
     PySet() {
@@ -66,5 +66,27 @@ public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArr
         } else {
             Collections.addAll(elements, ((SupportsToArray)sequence).toArray());
         }
+    }
+
+    public long hashAnyway() {
+        long hash = 0;
+        for (PyObject element : elements) {
+            hash ^= shuffleBits(element.__hash__());
+        }
+
+        hash ^= ((long)elements.size() + 1L) * 1927868237L;
+
+        hash ^= (hash >>> 11) ^ (hash >>> 25);
+        hash = hash * 69069L + 907133923L;
+
+        if (hash == -1) {
+            hash = 590923713L;
+        }
+
+        return hash;
+    }
+
+    private static long shuffleBits(long h) {
+        return ((h ^ 89869747L) ^ (h << 16)) * 3644798167L;
     }
 }

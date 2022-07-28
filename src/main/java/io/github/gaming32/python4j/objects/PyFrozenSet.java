@@ -3,6 +3,8 @@ package io.github.gaming32.python4j.objects;
 public class PyFrozenSet extends PySet {
     public static final PyFrozenSet EMPTY = new PyFrozenSet();
 
+    private long hash = -1L;
+
     public static PyFrozenSet empty() {
         return new PyFrozenSet();
     }
@@ -19,7 +21,9 @@ public class PyFrozenSet extends PySet {
 
     @Override
     public long __hash__() {
-        // TODO Auto-generated method stub
-        return super.__hash__();
+        if (this.hash != -1L) {
+            return this.hash;
+        }
+        return this.hash = hashAnyway();
     }
 }
