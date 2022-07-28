@@ -12,6 +12,10 @@ public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArr
         elements = new HashSet<>();
     }
 
+    PySet(PySet other) {
+        elements = new HashSet<>(other.elements);
+    }
+
     public static PySet empty() {
         return new PySet();
     }
@@ -68,6 +72,17 @@ public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArr
         }
     }
 
+    @Override
+    public PyObject __or__(PyObject other) {
+        if (other instanceof PySet) {
+            PySet result = new PySet(this);
+            result.elements.addAll(((PySet)other).elements);
+            return result;
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    @Override
     public long hashAnyway() {
         long hash = 0;
         for (PyObject element : elements) {

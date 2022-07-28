@@ -5,6 +5,14 @@ public class PyFrozenSet extends PySet {
 
     private long hash = -1L;
 
+    PyFrozenSet() {
+        super();
+    }
+
+    private PyFrozenSet(PyFrozenSet other) {
+        super(other);
+    }
+
     public static PyFrozenSet empty() {
         return new PyFrozenSet();
     }
@@ -25,5 +33,15 @@ public class PyFrozenSet extends PySet {
             return this.hash;
         }
         return this.hash = hashAnyway();
+    }
+
+    @Override
+    public PyObject __or__(PyObject other) {
+        if (other instanceof PySet) {
+            PySet result = new PyFrozenSet(this);
+            result.elements.addAll(((PySet)other).elements);
+            return result;
+        }
+        return PyNotImplemented.NotImplemented;
     }
 }

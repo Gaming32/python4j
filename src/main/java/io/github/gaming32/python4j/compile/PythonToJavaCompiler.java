@@ -418,7 +418,7 @@ public class PythonToJavaCompiler {
                             false
                         );
                     } else {
-                        invokeRuntime(meth, "buildList", genericDescriptor(arg));
+                        invokeRuntime(meth, "buildSet", genericDescriptor(arg));
                     }
                     break;
 
