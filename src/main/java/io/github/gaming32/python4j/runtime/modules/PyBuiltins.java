@@ -43,22 +43,25 @@ public final class PyBuiltins extends JavaVirtualModule {
     }
 
     private static BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(FileDescriptor.out), 512);
+    private static byte[] lineSeparator = System.lineSeparator().getBytes();
+    private static byte[] argSeperator = " ".getBytes();
 
     @ModuleMethod
     public static PyObject print(PyArguments args) throws IOException {
         PyObject[] obj = args.getArgs();
         if (obj.length > 1) {
-            final String sep = getStringArgOrDefault(args, "sep", " ");
-            final StringBuilder sb = new StringBuilder(obj[0].__str__().toString());
+            final byte[] sep = args.hasKwarg("sep") ? args.getKwarg("end", PyNoneType.PyNone).toString().getBytes() : argSeperator;
+            out.write(obj[0].toString().getBytes());
             for (int i = 1; i < obj.length; i++) {
-                sb.append(sep).append(obj[i].__str__());
+                out.write(sep);
+                out.write(obj[i].toString().getBytes());
             }
-            sb.append(getStringArgOrDefault(args, "end", System.lineSeparator()));
-            out.write(sb.toString().getBytes());
+            out.write(args.hasKwarg("end") ? args.getKwarg("end", PyNoneType.PyNone).toString().getBytes() : lineSeparator);
         } else if (obj.length > 0) {
-            out.write(new StringBuilder(obj[0].__str__().toString()).append(getStringArgOrDefault(args, "end", System.lineSeparator())).toString().getBytes());
+            out.write(obj[0].toString().getBytes());
+            out.write(args.hasKwarg("end") ? args.getKwarg("end", PyNoneType.PyNone).toString().getBytes() : lineSeparator);
         } else {
-            out.write(getStringArgOrDefault(args, "end", System.lineSeparator()).getBytes());
+            out.write(args.hasKwarg("end") ? args.getKwarg("end", PyNoneType.PyNone).toString().getBytes() : lineSeparator);
         }
         out.flush();
         return PyNoneType.PyNone;
