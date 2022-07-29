@@ -1,21 +1,23 @@
 package io.github.gaming32.python4j.bytecode;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+
+import io.github.gaming32.python4j.Utils;
 
 public final class Opcode {
     public static final List<String> CMP_OP = List.of("<", "<=", "==", "!=", ">", ">=");
-    public static final Set<Integer> HAS_ARG;
-    public static final Set<Integer> HAS_CONST;
-    public static final Set<Integer> HAS_NAME;
-    public static final Set<Integer> HAS_JREL;
-    public static final Set<Integer> HAS_JABS;
-    public static final Set<Integer> HAS_LOCAL;
-    public static final Set<Integer> HAS_COMPARE;
-    public static final Set<Integer> HAS_FREE;
+    public static final List<Integer> HAS_ARG;
+    public static final List<Integer> HAS_CONST;
+    public static final List<Integer> HAS_NAME;
+    public static final List<Integer> HAS_JREL;
+    public static final List<Integer> HAS_JABS;
+    public static final List<Integer> HAS_LOCAL;
+    public static final List<Integer> HAS_COMPARE;
+    public static final List<Integer> HAS_FREE;
+    public static final List<Integer> HAS_NARGS = List.of();
     public static final List<String> OP_NAME;
     public static final Map<String, Integer> OP_MAP;
 
@@ -37,7 +39,7 @@ public final class Opcode {
     public static final int MKFN_ANNOTATIONS = 0x04;
     public static final int MKFN_CLOSURE = 0x08;
 
-    // region GENERATED CODE (see generate_opcode_fields.py)
+    // region GENERATED CODE (see generate_opcode_fields.py);
     public static final int CACHE = 0;
     public static final int POP_TOP = 1;
     public static final int PUSH_NULL = 2;
@@ -159,14 +161,14 @@ public final class Opcode {
 
     static {
         class OpcodeSetup {
-            final Set<Integer> hasArg = new HashSet<>();
-            final Set<Integer> hasConst = new HashSet<>();
-            final Set<Integer> hasName = new HashSet<>();
-            final Set<Integer> hasJrel = new HashSet<>();
-            final Set<Integer> hasJabs = new HashSet<>();
-            final Set<Integer> hasLocal = new HashSet<>();
-            final Set<Integer> hasCompare = new HashSet<>();
-            final Set<Integer> hasFree = new HashSet<>();
+            final List<Integer> hasArg = new ArrayList<>();
+            final List<Integer> hasConst = new ArrayList<>();
+            final List<Integer> hasName = new ArrayList<>();
+            final List<Integer> hasJrel = new ArrayList<>();
+            final List<Integer> hasJabs = new ArrayList<>();
+            final List<Integer> hasLocal = new ArrayList<>();
+            final List<Integer> hasCompare = new ArrayList<>();
+            final List<Integer> hasFree = new ArrayList<>();
 
             final Map<String, Integer> opMap = new HashMap<>();
             final String[] opName = new String[256]; {
@@ -207,8 +209,6 @@ public final class Opcode {
         o.defOp("UNARY_INVERT", 15);
 
         o.defOp("BINARY_SUBSCR", 25);
-        o.defOp("BINARY_SLICE", 26);
-        o.defOp("STORE_SLICE", 27);
 
         o.defOp("GET_LEN", 30);
         o.defOp("MATCH_MAPPING", 31);
@@ -241,12 +241,12 @@ public final class Opcode {
         o.defOp("RETURN_VALUE", 83);
         o.defOp("IMPORT_STAR", 84);
         o.defOp("SETUP_ANNOTATIONS", 85);
-
+        o.defOp("YIELD_VALUE", 86);
         o.defOp("ASYNC_GEN_WRAP", 87);
         o.defOp("PREP_RERAISE_STAR", 88);
         o.defOp("POP_EXCEPT", 89);
 
-        HAVE_ARGUMENT = 90; // real opcodes from here have an argument:
+        HAVE_ARGUMENT = 90;              // Opcodes from here have an argument:
 
         o.nameOp("STORE_NAME", 90);       // Index in name list
         o.nameOp("DELETE_NAME", 91);      // ""
@@ -282,7 +282,7 @@ public final class Opcode {
         o.defOp("COPY", 120);
         o.defOp("BINARY_OP", 122);
         o.jrelOp("SEND", 123); // Number of bytes to skip
-        o.defOp("LOAD_FAST", 124);        // Local variable number, no null check
+        o.defOp("LOAD_FAST", 124);        // Local variable number
         o.hasLocal.add(124);
         o.defOp("STORE_FAST", 125);       // Local variable number
         o.hasLocal.add(125);
@@ -316,13 +316,15 @@ public final class Opcode {
         o.defOp("LOAD_CLASSDEREF", 148);
         o.hasFree.add(148);
         o.defOp("COPY_FREE_VARS", 149);
-        o.defOp("YIELD_VALUE", 150);
+
         o.defOp("RESUME", 151);   // This must be kept in sync with deepfreeze.py
         o.defOp("MATCH_CLASS", 152);
 
         o.defOp("FORMAT_VALUE", 155);
         o.defOp("BUILD_CONST_KEY_MAP", 156);
         o.defOp("BUILD_STRING", 157);
+
+        o.nameOp("LOAD_METHOD", 160);
 
         o.defOp("LIST_EXTEND", 162);
         o.defOp("SET_UPDATE", 163);
@@ -345,14 +347,14 @@ public final class Opcode {
             }
         }
 
-        HAS_ARG = Set.copyOf(o.hasArg);
-        HAS_CONST = Set.copyOf(o.hasConst);
-        HAS_NAME = Set.copyOf(o.hasName);
-        HAS_JREL = Set.copyOf(o.hasJrel);
-        HAS_JABS = Set.copyOf(o.hasJabs);
-        HAS_LOCAL = Set.copyOf(o.hasLocal);
-        HAS_COMPARE = Set.copyOf(o.hasCompare);
-        HAS_FREE = Set.copyOf(o.hasFree);
+        HAS_ARG = List.copyOf(o.hasArg);
+        HAS_CONST = List.copyOf(o.hasConst);
+        HAS_NAME = List.copyOf(o.hasName);
+        HAS_JREL = List.copyOf(o.hasJrel);
+        HAS_JABS = List.copyOf(o.hasJabs);
+        HAS_LOCAL = List.copyOf(o.hasLocal);
+        HAS_COMPARE = List.copyOf(o.hasCompare);
+        HAS_FREE = List.copyOf(o.hasFree);
         OP_NAME = List.of(o.opName);
         OP_MAP = Map.copyOf(o.opMap);
     }
@@ -386,7 +388,7 @@ public final class Opcode {
         Map.entry("NB_INPLACE_XOR", "^=")
     );
 
-    static final Map<String, String[]> SPECIALIZATIONS = Map.ofEntries(
+    static final Map<String, String[]> SPECIALIZATIONS = Utils.orderedMapOfEntries(
         Map.entry("BINARY_OP", new String[] {
             "BINARY_OP_ADAPTIVE",
             "BINARY_OP_ADD_FLOAT",
@@ -396,154 +398,163 @@ public final class Opcode {
             "BINARY_OP_MULTIPLY_FLOAT",
             "BINARY_OP_MULTIPLY_INT",
             "BINARY_OP_SUBTRACT_FLOAT",
-            "BINARY_OP_SUBTRACT_INT"
+            "BINARY_OP_SUBTRACT_INT",
         }),
         Map.entry("BINARY_SUBSCR", new String[] {
             "BINARY_SUBSCR_ADAPTIVE",
             "BINARY_SUBSCR_DICT",
             "BINARY_SUBSCR_GETITEM",
             "BINARY_SUBSCR_LIST_INT",
-            "BINARY_SUBSCR_TUPLE_INT"
+            "BINARY_SUBSCR_TUPLE_INT",
         }),
         Map.entry("CALL", new String[] {
             "CALL_ADAPTIVE",
             "CALL_PY_EXACT_ARGS",
             "CALL_PY_WITH_DEFAULTS",
-            "CALL_BOUND_METHOD_EXACT_ARGS",
-            "CALL_BUILTIN_CLASS",
-            "CALL_BUILTIN_FAST_WITH_KEYWORDS",
-            "CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS",
-            "CALL_NO_KW_BUILTIN_FAST",
-            "CALL_NO_KW_BUILTIN_O",
-            "CALL_NO_KW_ISINSTANCE",
-            "CALL_NO_KW_LEN",
-            "CALL_NO_KW_LIST_APPEND",
-            "CALL_NO_KW_METHOD_DESCRIPTOR_FAST",
-            "CALL_NO_KW_METHOD_DESCRIPTOR_NOARGS",
-            "CALL_NO_KW_METHOD_DESCRIPTOR_O",
-            "CALL_NO_KW_STR_1",
-            "CALL_NO_KW_TUPLE_1",
-            "CALL_NO_KW_TYPE_1"
         }),
         Map.entry("COMPARE_OP", new String[] {
             "COMPARE_OP_ADAPTIVE",
             "COMPARE_OP_FLOAT_JUMP",
             "COMPARE_OP_INT_JUMP",
-            "COMPARE_OP_STR_JUMP"
+            "COMPARE_OP_STR_JUMP",
         }),
         Map.entry("EXTENDED_ARG", new String[] {
-            "EXTENDED_ARG_QUICK"
-        }),
-        Map.entry("FOR_ITER", new String[] {
-            "FOR_ITER_ADAPTIVE",
-            "FOR_ITER_LIST",
-            "FOR_ITER_RANGE"
+            "EXTENDED_ARG_QUICK",
         }),
         Map.entry("JUMP_BACKWARD", new String[] {
-            "JUMP_BACKWARD_QUICK"
+            "JUMP_BACKWARD_QUICK",
         }),
         Map.entry("LOAD_ATTR", new String[] {
             "LOAD_ATTR_ADAPTIVE",
-            // # These potentially push [NULL, bound method] onto the stack.
-            "LOAD_ATTR_CLASS",
             "LOAD_ATTR_INSTANCE_VALUE",
             "LOAD_ATTR_MODULE",
-            "LOAD_ATTR_PROPERTY",
             "LOAD_ATTR_SLOT",
             "LOAD_ATTR_WITH_HINT",
-            // # These will always push [unbound method, self] onto the stack.
-            "LOAD_ATTR_METHOD_LAZY_DICT",
-            "LOAD_ATTR_METHOD_NO_DICT",
-            "LOAD_ATTR_METHOD_WITH_DICT",
-            "LOAD_ATTR_METHOD_WITH_VALUES"
         }),
         Map.entry("LOAD_CONST", new String[] {
-            "LOAD_CONST__LOAD_FAST"
+            "LOAD_CONST__LOAD_FAST",
         }),
         Map.entry("LOAD_FAST", new String[] {
             "LOAD_FAST__LOAD_CONST",
-            "LOAD_FAST__LOAD_FAST"
+            "LOAD_FAST__LOAD_FAST",
         }),
         Map.entry("LOAD_GLOBAL", new String[] {
             "LOAD_GLOBAL_ADAPTIVE",
             "LOAD_GLOBAL_BUILTIN",
-            "LOAD_GLOBAL_MODULE"
+            "LOAD_GLOBAL_MODULE",
+        }),
+        Map.entry("LOAD_METHOD", new String[] {
+            "LOAD_METHOD_ADAPTIVE",
+            "LOAD_METHOD_CLASS",
+            "LOAD_METHOD_MODULE",
+            "LOAD_METHOD_NO_DICT",
+            "LOAD_METHOD_WITH_DICT",
+            "LOAD_METHOD_WITH_VALUES",
+        }),
+        Map.entry("PRECALL", new String[] {
+            "PRECALL_ADAPTIVE",
+            "PRECALL_BOUND_METHOD",
+            "PRECALL_BUILTIN_CLASS",
+            "PRECALL_BUILTIN_FAST_WITH_KEYWORDS",
+            "PRECALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS",
+            "PRECALL_NO_KW_BUILTIN_FAST",
+            "PRECALL_NO_KW_BUILTIN_O",
+            "PRECALL_NO_KW_ISINSTANCE",
+            "PRECALL_NO_KW_LEN",
+            "PRECALL_NO_KW_LIST_APPEND",
+            "PRECALL_NO_KW_METHOD_DESCRIPTOR_FAST",
+            "PRECALL_NO_KW_METHOD_DESCRIPTOR_NOARGS",
+            "PRECALL_NO_KW_METHOD_DESCRIPTOR_O",
+            "PRECALL_NO_KW_STR_1",
+            "PRECALL_NO_KW_TUPLE_1",
+            "PRECALL_NO_KW_TYPE_1",
+            "PRECALL_PYFUNC",
         }),
         Map.entry("RESUME", new String[] {
-            "RESUME_QUICK"
+            "RESUME_QUICK",
         }),
         Map.entry("STORE_ATTR", new String[] {
             "STORE_ATTR_ADAPTIVE",
             "STORE_ATTR_INSTANCE_VALUE",
             "STORE_ATTR_SLOT",
-            "STORE_ATTR_WITH_HINT"
+            "STORE_ATTR_WITH_HINT",
         }),
         Map.entry("STORE_FAST", new String[] {
             "STORE_FAST__LOAD_FAST",
-            "STORE_FAST__STORE_FAST"
+            "STORE_FAST__STORE_FAST",
         }),
         Map.entry("STORE_SUBSCR", new String[] {
             "STORE_SUBSCR_ADAPTIVE",
             "STORE_SUBSCR_DICT",
-            "STORE_SUBSCR_LIST_INT"
+            "STORE_SUBSCR_LIST_INT",
         }),
         Map.entry("UNPACK_SEQUENCE", new String[] {
             "UNPACK_SEQUENCE_ADAPTIVE",
             "UNPACK_SEQUENCE_LIST",
             "UNPACK_SEQUENCE_TUPLE",
-            "UNPACK_SEQUENCE_TWO_TUPLE"
+            "UNPACK_SEQUENCE_TWO_TUPLE",
         })
     );
 
+    static final List<String> SPECIALIZED_INSTRUCTIONS = new ArrayList<>();
+
+    static {
+        for (final var family : SPECIALIZATIONS.values()) {
+            for (final String opcode : family) {
+                SPECIALIZED_INSTRUCTIONS.add(opcode);
+            }
+        }
+    }
+
     static final Map<String, Map<String, Integer>> CACHE_FORMAT = Map.ofEntries(
-        Map.entry("LOAD_GLOBAL", Map.of(
+        Map.entry("LOAD_GLOBAL", Utils.orderedMapOf(
             "counter", 1,
             "index", 1,
             "module_keys_version", 2,
             "builtin_keys_version", 1
         )),
-        Map.entry("BINARY_OP", Map.of(
+        Map.entry("BINARY_OP", Utils.orderedMapOf(
             "counter", 1
         )),
-        Map.entry("UNPACK_SEQUENCE", Map.of(
+        Map.entry("UNPACK_SEQUENCE", Utils.orderedMapOf(
             "counter", 1
         )),
-        Map.entry("COMPARE_OP", Map.of(
+        Map.entry("COMPARE_OP", Utils.orderedMapOf(
             "counter", 1,
             "mask", 1
         )),
-        Map.entry("BINARY_SUBSCR", Map.of(
+        Map.entry("BINARY_SUBSCR", Utils.orderedMapOf(
             "counter", 1,
             "type_version", 2,
             "func_version", 1
         )),
-        Map.entry("LOAD_ATTR", Map.of(
+        Map.entry("LOAD_ATTR", Utils.orderedMapOf(
             "counter", 1,
             "version", 2,
             "keys_version", 2,
             "descr", 4
         )),
-        Map.entry("STORE_ATTR", Map.of(
+        Map.entry("STORE_ATTR", Utils.orderedMapOf(
             "counter", 1,
             "version", 2,
             "index", 1
         )),
-        Map.entry("LOAD_METHOD", Map.of(
+        Map.entry("LOAD_METHOD", Utils.orderedMapOf(
             "counter", 1,
             "type_version", 2,
             "dict_offset", 1,
             "keys_version", 2,
             "descr", 4
         )),
-        Map.entry("CALL", Map.of(
+        Map.entry("CALL", Utils.orderedMapOf(
             "counter", 1,
             "func_version", 2,
             "min_args", 1
         )),
-        Map.entry("PRECALL", Map.of(
+        Map.entry("PRECALL", Utils.orderedMapOf(
             "counter", 1
         )),
-        Map.entry("STORE_SUBSCR", Map.of(
+        Map.entry("STORE_SUBSCR", Utils.orderedMapOf(
             "counter", 1
         ))
     );

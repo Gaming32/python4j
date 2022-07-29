@@ -294,11 +294,13 @@ public class PythonToJavaCompiler {
             if (insn.getStartsLine().isPresent()) {
                 meth.visitLineNumber(insn.getStartsLine().getAsInt(), insnLabel);
             }
+            final int op = Disassemble.deoptop(insn.getOpcode());
             final int arg = insn.getArg().orElse(-1);
-            switch (insn.getOpcode()) {
+            switch (op) {
                 case Opcode.NOP:
                 case Opcode.RESUME:
                 case Opcode.PRECALL:
+                case Opcode.EXTENDED_ARG: // These aren handled by getInstructions
                     break;
 
                 case Opcode.POP_TOP:
@@ -418,7 +420,7 @@ public class PythonToJavaCompiler {
                             false
                         );
                     } else {
-                        invokeRuntime(meth, "buildSet", genericDescriptor(arg));
+                        invokeRuntime(meth, "buildList", genericDescriptor(arg));
                     }
                     break;
 
@@ -495,8 +497,8 @@ public class PythonToJavaCompiler {
                     break;
 
                 case Opcode.MAP_ADD:
-                    if (arg != 2) {
-                        throw new IllegalArgumentException("MAP_ADD only supports argument of 2");
+                    if (arg != 1) {
+                        throw new IllegalArgumentException("MAP_ADD only supports argument of 1");
                     }
                     invokeRuntime(meth, "mapAdd", genericDescriptor(3));
                     break;
@@ -603,11 +605,11 @@ public class PythonToJavaCompiler {
                         throw new IllegalArgumentException("Cannot LOAD_NAME from function yet");
                     }
                 case Opcode.LOAD_GLOBAL:
-                    if ((arg & 1) != 0 && insn.getOpcode() == Opcode.LOAD_GLOBAL) {
+                    if ((arg & 1) != 0 && op == Opcode.LOAD_GLOBAL) {
                         meth.aconst(null);
                     }
                     getGlobals(meth);
-                    meth.aconst(codeObj.getCo_names().getItem(insn.getOpcode() == Opcode.LOAD_GLOBAL ? arg >> 1 : arg).toString());
+                    meth.aconst(codeObj.getCo_names().getItem(op == Opcode.LOAD_GLOBAL ? arg >> 1 : arg).toString());
                     invokeRuntime(meth, "loadGlobal", "(Ljava/util/Map;Ljava/lang/String;)L" + C_PYOBJECT + ";");
                     break;
 
@@ -690,7 +692,7 @@ public class PythonToJavaCompiler {
                     break;
 
                 default:
-                    throw new IllegalArgumentException("Unsupported opcode: " + Opcode.OP_NAME.get(insn.getOpcode()));
+                    throw new IllegalArgumentException("Unsupported opcode: " + Opcode.OP_NAME.get(op));
             }
         }
         final Label endLabel = new Label();

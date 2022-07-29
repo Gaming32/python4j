@@ -2,6 +2,9 @@ package io.github.gaming32.python4j;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.OptionalInt;
 
 public final class Utils {
@@ -47,5 +50,26 @@ public final class Utils {
             }
         }
         throw new IllegalArgumentException("Unsupported size: " + size);
+    }
+
+    @SafeVarargs
+    public static <K, V> Map<K, V> orderedMapOfEntries(Map.Entry<K, V>... entries) {
+        final Map<K, V> result = new LinkedHashMap<>();
+        for (Map.Entry<K, V> entry : entries) {
+            result.put(entry.getKey(), entry.getValue());
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <K, V> Map<K, V> orderedMapOf(Object... entries) {
+        if ((entries.length & 1) != 0) {
+            throw new IllegalArgumentException("Expected even number of entries");
+        }
+        final Map<K, V> result = new LinkedHashMap<>();
+        for (int i = 0; i < entries.length; i += 2) {
+            result.put((K)entries[i], (V)entries[i + 1]);
+        }
+        return Collections.unmodifiableMap(result);
     }
 }

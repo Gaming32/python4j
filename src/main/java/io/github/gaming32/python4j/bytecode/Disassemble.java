@@ -237,10 +237,23 @@ public final class Disassemble {
     private static final int CACHE = Opcode.OP_MAP.get("CACHE");
 
     private static final String[] ALL_OPNAME = Opcode.OP_NAME.toArray(new String[0]);
-    private static final Map<String, Integer> ALL_OPMAP = Opcode.OP_MAP;
+    private static final Map<String, Integer> ALL_OPMAP = new HashMap<>(Opcode.OP_MAP);
     private static final Map<String, String> DEOPT_MAP = new HashMap<>();
 
     static {
+        final List<Integer> emptySlot = new ArrayList<>();
+        for (int slot = 0; slot < ALL_OPNAME.length; slot++) {
+            if (ALL_OPNAME[slot].startsWith("<")) {
+                emptySlot.add(slot);
+            }
+        }
+        for (int i = 0, n = Math.min(emptySlot.size(), Opcode.SPECIALIZED_INSTRUCTIONS.size()); i < n; i++) {
+            final int specOp = emptySlot.get(i);
+            final String specialized = Opcode.SPECIALIZED_INSTRUCTIONS.get(i);
+            ALL_OPNAME[specOp] = specialized;
+            ALL_OPMAP.put(specialized, specOp);
+        }
+
         for (final var entry : Opcode.SPECIALIZATIONS.entrySet()) {
             for (final String specialized : entry.getValue()) {
                 DEOPT_MAP.put(specialized, entry.getKey());
@@ -628,7 +641,7 @@ public final class Disassemble {
         return result;
     }
 
-    private static int deoptop(int op) {
+    public static int deoptop(int op) {
         final String deoptName = DEOPT_MAP.get(ALL_OPNAME[op]);
         return deoptName != null ? ALL_OPMAP.get(deoptName) : op;
     }

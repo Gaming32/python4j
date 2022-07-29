@@ -324,7 +324,7 @@ public class PyUnicode extends PyObject {
             case KIND_1BYTE:
                 return fromUCS1(data, size);
             default:
-                throw new IllegalAccessError("invalid kind");
+                throw new IllegalArgumentException("invalid kind");
         }
     }
 
