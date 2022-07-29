@@ -1384,6 +1384,145 @@ public class PyLong extends PyVarObject implements Comparable<PyLong> {
         return PyNotImplemented.NotImplemented;
     }
 
+    public PyLong and(PyLong y) {
+        if (isMediumValue() && y.isMediumValue()) {
+            return fromTwoDigits(mediumValue() & y.mediumValue());
+        }
+        return bitwise(this, '&', y);
+    }
+
+    @Override
+    public PyObject __and__(PyObject other) {
+        if (other instanceof PyLong) {
+            return and((PyLong)other);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyLong xor(PyLong y) {
+        if (isMediumValue() && y.isMediumValue()) {
+            return fromTwoDigits(mediumValue() ^ y.mediumValue());
+        }
+        return bitwise(this, '^', y);
+    }
+
+    @Override
+    public PyObject __xor__(PyObject other) {
+        if (other instanceof PyLong) {
+            return xor((PyLong)other);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    public PyLong or(PyLong y) {
+        if (isMediumValue() && y.isMediumValue()) {
+            return fromTwoDigits(mediumValue() | y.mediumValue());
+        }
+        return bitwise(this, '|', y);
+    }
+
+    @Override
+    public PyObject __or__(PyObject other) {
+        if (other instanceof PyLong) {
+            return or((PyLong)other);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    private static PyLong bitwise(PyLong a, char op, PyLong b) {
+        PyLong z;
+
+        int sizeA = Math.abs(a.size);
+        boolean negA = a.size < 0;
+        if (negA) {
+            z = new PyLong(sizeA);
+            complement(z.digits, a.digits, sizeA);
+            a = z;
+        }
+
+        int sizeB = Math.abs(b.size);
+        boolean negB = b.size < 0;
+        if (negB) {
+            z = new PyLong(sizeB);
+            complement(z.digits, b.digits, sizeB);
+            b = z;
+        }
+
+        int sizeZ;
+        boolean negZ;
+        if (sizeA < sizeB) {
+            z = a; a = b; b = z;
+            sizeZ = sizeA; sizeA = sizeB; sizeB = sizeZ;
+            negZ = negA; negA = negB; negB = negZ;
+        }
+
+        switch (op) {
+            case '^':
+                negZ = negA ^ negB;
+                sizeZ = sizeA;
+                break;
+            case '&':
+                negZ = negA & negB;
+                sizeZ = negB ? sizeA : sizeB;
+                break;
+            case '|':
+                negZ = negA | negB;
+                sizeZ = negB ? sizeB : sizeA;
+                break;
+            default:
+                throw new AssertionError();
+        }
+
+        z = new PyLong(sizeZ + (negZ ? 1 : 0));
+
+        int i;
+        switch (op) {
+            case '&':
+                for (i = 0; i < sizeB; i++) {
+                    z.digits[i] = a.digits[i] & b.digits[i];
+                }
+                break;
+            case '|':
+                for (i = 0; i < sizeB; i++) {
+                    z.digits[i] = a.digits[i] | b.digits[i];
+                }
+                break;
+            case '^':
+                for (i = 0; i < sizeB; i++) {
+                    z.digits[i] = a.digits[i] ^ b.digits[i];
+                }
+                break;
+            default:
+                throw new AssertionError();
+        }
+
+        if (op == '^' && negB) {
+            for (; i < sizeA; i++) {
+                z.digits[i] = a.digits[i] ^ MASK;
+            }
+        } else if (i < sizeZ) {
+            System.arraycopy(a.digits, i, z.digits, i, sizeZ - i);
+        }
+
+        if (negZ) {
+            z.size = -z.size;
+            z.digits[sizeZ] = MASK;
+            complement(z.digits, z.digits, sizeZ + 1);
+        }
+
+        return z.normalize().maybeSmall();
+    }
+
+    private static void complement(int[] z, int[] a, int m) {
+        int carry = 1;
+        for (int i = 0; i < m; i++) {
+            carry += a[i] ^ MASK;
+            z[i] = carry & MASK;
+            carry >>= SHIFT;
+        }
+        assert carry == 0;
+    }
+
     private PyLong normalize() {
         int j = Math.abs(size);
         int i = j;
