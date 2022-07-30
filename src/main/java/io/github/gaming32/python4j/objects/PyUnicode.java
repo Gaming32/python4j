@@ -846,7 +846,11 @@ public class PyUnicode extends PyObject {
                     s += endInPos - startInPos;
 
                 case ERROR_STRICT:
-                    throw new WrappedPyException(PyException::new, errmsg + " at position " + startInPos + " of " + endInPos);
+                    if (startInPos == endInPos - 1) {
+                        throw new WrappedPyException(PyException::new, String.format("Can't decode byte 0x%1$02x in position %2$d: %s", data[startInPos] & 0xff, startInPos, errmsg));
+                    } else {
+                        throw new WrappedPyException(PyException::new, "Can't decode bytes in position " + startInPos + "-" + endInPos + ": " + errmsg);
+                    }
 
                 default:
                     throw new UnsupportedOperationException("Unimplemented error handler: " + errorHandler);
