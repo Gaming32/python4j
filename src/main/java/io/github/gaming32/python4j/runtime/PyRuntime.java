@@ -13,7 +13,6 @@ import io.github.gaming32.python4j.objects.PyList;
 import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.objects.PySet;
 import io.github.gaming32.python4j.objects.PyTuple;
-import io.github.gaming32.python4j.objects.PyUnicode;
 import io.github.gaming32.python4j.objects.SupportsToArray;
 import io.github.gaming32.python4j.objects.WrappedPyException;
 import io.github.gaming32.python4j.runtime.javavirtualmodule.PyJavaVirtualModule;
@@ -49,7 +48,7 @@ public final class PyRuntime {
             }
             global = builtins.getattr(name);
             if (global == null) {
-                throw new WrappedPyException(new PyException(PyTuple.fromElements(PyUnicode.fromString("NameError: name '" + name + "' is not defined"))));
+                throw new WrappedPyException(PyException::new, "NameError: name '" + name + "' is not defined");
             }
         }
         return global;

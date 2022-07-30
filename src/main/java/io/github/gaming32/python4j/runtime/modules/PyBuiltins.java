@@ -4,6 +4,8 @@ import java.io.BufferedOutputStream;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import io.github.gaming32.python4j.objects.PyBool;
 import io.github.gaming32.python4j.objects.PyNoneType;
@@ -49,22 +51,30 @@ public final class PyBuiltins extends JavaVirtualModule {
     @ModuleMethod
     public static PyObject print(PyArguments args) throws IOException {
         PyObject[] obj = args.getArgs();
+        final byte[] end = args.hasKwarg("end") ? getBytes(args.getKwarg("end", PyNoneType.PyNone)) : lineSeparator;
         if (obj.length > 1) {
-            final byte[] sep = args.hasKwarg("sep") ? args.getKwarg("end", PyNoneType.PyNone).toString().getBytes() : argSeperator;
-            out.write(obj[0].toString().getBytes());
+            final byte[] sep = args.hasKwarg("sep") ? getBytes(args.getKwarg("sep", PyNoneType.PyNone)) : argSeperator;
+            out.write(getBytes(obj[0]));
             for (int i = 1; i < obj.length; i++) {
                 out.write(sep);
-                out.write(obj[i].toString().getBytes());
+                out.write(getBytes(obj[i]));
             }
-            out.write(args.hasKwarg("end") ? args.getKwarg("end", PyNoneType.PyNone).toString().getBytes() : lineSeparator);
+            out.write(end);
         } else if (obj.length > 0) {
-            out.write(obj[0].toString().getBytes());
-            out.write(args.hasKwarg("end") ? args.getKwarg("end", PyNoneType.PyNone).toString().getBytes() : lineSeparator);
+            out.write(getBytes(obj[0]));
+            out.write(end);
         } else {
-            out.write(args.hasKwarg("end") ? args.getKwarg("end", PyNoneType.PyNone).toString().getBytes() : lineSeparator);
+            out.write(end);
         }
         out.flush();
         return PyNoneType.PyNone;
+    }
+
+    private static byte[] getBytes(PyObject obj) {
+        if (obj instanceof PyUnicode && Charset.defaultCharset() == StandardCharsets.UTF_8) {
+            return ((PyUnicode)obj).asEncodedString(null, "replace"); // null -> utf-8
+        }
+        return obj.toString().getBytes();
     }
 
     public static String repr(PyObject obj) {

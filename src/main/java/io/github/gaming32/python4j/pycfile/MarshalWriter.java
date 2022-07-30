@@ -286,7 +286,7 @@ public final class MarshalWriter {
                     writePBytes(theUnicode.getLatin1());
                 }
             } else {
-                final byte[] encoded = theUnicode.asEncodedString("utf8", "surrogatepass");
+                final byte[] encoded = theUnicode.asEncodedString(null, "surrogatepass"); // null -> utf-8
                 writeByte(TYPE_UNICODE);
                 writePBytes(encoded);
             }

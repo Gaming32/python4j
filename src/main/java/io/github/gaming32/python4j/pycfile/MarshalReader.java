@@ -267,7 +267,7 @@ public class MarshalReader extends FilterInputStream {
                 if (n != 0) {
                     byte[] b = new byte[n];
                     readFully(b);
-                    result = PyUnicode.fromKindAndData(PyUnicode.KIND_2BYTE, b, n);
+                    result = PyUnicode.decodeUTF8(b, n, "surrogatepass");
                 } else {
                     result = PyUnicode.fromSizeAndMax(0, 0);
                 }

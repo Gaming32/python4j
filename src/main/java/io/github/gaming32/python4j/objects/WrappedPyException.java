@@ -2,6 +2,7 @@ package io.github.gaming32.python4j.objects;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.function.Function;
 
 import io.github.gaming32.python4j.pycfile.MarshalReader;
 import io.github.gaming32.python4j.runtime.PyFrame;
@@ -13,6 +14,18 @@ public final class WrappedPyException extends RuntimeException {
     public WrappedPyException(PyBaseException wrapped) {
         super(wrapped.toString());
         this.wrapped = wrapped;
+    }
+
+    public WrappedPyException(Function<PyTuple, PyBaseException> constructor, String... args) {
+        this(constructor.apply(fromStringArgs(args)));
+    }
+
+    private static PyTuple fromStringArgs(String[] args) {
+        final PyTuple result = PyTuple.fromSize(args.length);
+        for (int i = 0; i < args.length; i++) {
+            result.setItem(i, PyUnicode.fromString(args[i]));
+        }
+        return result;
     }
 
     public PyBaseException getWrapped() {

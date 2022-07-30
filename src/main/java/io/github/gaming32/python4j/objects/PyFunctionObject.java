@@ -102,13 +102,7 @@ public final class PyFunctionObject extends PyObject {
         }
         for (int i = 0; i < actualArgs.length; i++) {
             if (actualArgs[i] == null) {
-                throw new WrappedPyException(
-                    new PyException(
-                        PyTuple.fromElements(
-                            PyUnicode.fromString("Missing required argument " + code.getCo_varnames().getItem(i))
-                        )
-                    )
-                );
+                throw new WrappedPyException(PyException::new, "Missing required argument " + code.getCo_varnames().getItem(i));
             }
         }
         return actualFunction.apply(actualArgs);
