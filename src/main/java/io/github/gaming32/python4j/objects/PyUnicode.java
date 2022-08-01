@@ -95,7 +95,9 @@ public class PyUnicode extends PyObject {
         StringBuilder sb = new StringBuilder().append(quote);
         for (int i = 0; i < length(); i++) {
             int c = getCodePoint(i);
-            if (c == escapeQuote) {
+            if (c >= 32 && c < 128) {
+                sb.append((char)c);
+            } else if (c == escapeQuote) {
                 sb.append('\\').append(escapeQuote);
             } else if (c == '\n') {
                 sb.append("\\n");
@@ -107,9 +109,7 @@ public class PyUnicode extends PyObject {
                 sb.append("\\f");
             } else if (c == '\b') {
                 sb.append("\\b");
-            } else if (c >= 32 && c < 128) {
-                sb.append((char)c);
-            } else if (c < 0x100) {
+            }  else if (c < 0x100) {
                 sb.append("\\x").append(String.format("%02x", c));
             } else if (c < 0x10000) {
                 sb.append("\\u").append(String.format("%04x", c));
@@ -320,7 +320,7 @@ public class PyUnicode extends PyObject {
 
     private byte[] asUtf8String(String errors, byte errorHandler) {
         if (isAscii()) {
-            return getLatin1();
+            return data.clone();
         }
 
         final byte kind = getKind();
@@ -480,7 +480,7 @@ public class PyUnicode extends PyObject {
     public static PyUnicode fromString(String s) {
         int kind = KIND_1BYTE;
         boolean isAscii = true;
-        for (int i = 0; i < s.length();) {
+        for (int i = 0; i < s.length(); i++) {
             int cp = s.codePointAt(i);
             if (cp > 127) {
                 isAscii = false;
@@ -492,7 +492,6 @@ public class PyUnicode extends PyObject {
                     }
                 }
             }
-            i += Character.charCount(cp);
         }
         final byte[] result = new byte[(kind == KIND_4BYTE ? s.codePointCount(0, s.length()) : s.length()) << kind];
         if (kind == KIND_1BYTE) {

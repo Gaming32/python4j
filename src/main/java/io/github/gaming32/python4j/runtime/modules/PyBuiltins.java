@@ -59,8 +59,8 @@ public final class PyBuiltins extends JavaVirtualModule {
     }
 
     private static byte[] getBytes(PyObject obj) {
-        if (obj instanceof PyUnicode && Charset.defaultCharset() == StandardCharsets.UTF_8) {
-            return ((PyUnicode)obj).asEncodedString(null, "replace"); // null -> utf-8
+        if (Charset.defaultCharset() == StandardCharsets.UTF_8) {
+            return obj.__str__().asEncodedString(null, "replace"); // null -> utf-8
         }
         return obj.toString().getBytes();
     }

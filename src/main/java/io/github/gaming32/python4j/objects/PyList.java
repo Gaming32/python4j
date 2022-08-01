@@ -14,6 +14,10 @@ public class PyList extends PyObject implements SupportsToArray {
         }
     }
 
+    private PyList(List<PyObject> elements) {
+        this.elements = elements;
+    }
+
     public static PyList fromSize(int size) {
         return new PyList(size);
     }
@@ -70,5 +74,58 @@ public class PyList extends PyObject implements SupportsToArray {
     @Override
     public long __hash__() {
         return notHashable();
+    }
+
+    public PyList concat(PyList other) {
+        final List<PyObject> result = new ArrayList<>(elements.size() + other.elements.size());
+        result.addAll(elements);
+        result.addAll(other.elements);
+        return new PyList(result);
+    }
+
+    @Override
+    public PyObject __add__(PyObject other) {
+        if (!(other instanceof PyList)) {
+            throw new WrappedPyException(PyException::new, "TypeError: can only concatenate list (not \"" + other.getClass().getSimpleName() + "\") to list");
+        }
+        return concat((PyList)other);
+    }
+
+    public PyList repeat(int n) {
+        if (n == 0) {
+            return new PyList(new ArrayList<>());
+        }
+        if (n == 1) {
+            return new PyList(new ArrayList<>(elements));
+        }
+        final List<PyObject> result = new ArrayList<>(elements.size() * n);
+        result.addAll(elements);
+        int i = 1;
+        while (i << 1 <= n) {
+            result.addAll(result);
+            i <<= 1;
+        }
+        while (i < n) {
+            result.addAll(elements);
+            i++;
+        }
+        return new PyList(result);
+    }
+
+    @Override
+    public PyObject __mul__(PyObject other) {
+        if (other instanceof PyLong) {
+            final int[] longAndOverflow = ((PyLong)other).asLongAndOverflow();
+            if (longAndOverflow[1] != 0) {
+                throw new IllegalArgumentException("PyLong too large");
+            }
+            return repeat(longAndOverflow[0]);
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    @Override
+    public PyObject __rmul__(PyObject other) {
+        return __mul__(other);
     }
 }
