@@ -4,7 +4,7 @@ import java.lang.invoke.MethodHandles;
 
 import io.github.gaming32.python4j.objects.PyObject;
 
-public abstract class JavaVirtualModule implements JavaVirtualModuleMarker {
+public abstract class JavaVirtualModule {
     private final String name;
     private String[] all = null;
     final MethodHandles.Lookup lookup = MethodHandles.lookup();

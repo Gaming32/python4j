@@ -16,11 +16,11 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import io.github.gaming32.python4j.Utils;
 import io.github.gaming32.python4j.objects.PyBool;
 import io.github.gaming32.python4j.objects.PyCodeObject;
 import io.github.gaming32.python4j.objects.PyCodeObject.PyCodeAddressRange;
 import io.github.gaming32.python4j.runtime.modules.PyBuiltins;
+import io.github.gaming32.python4j.util.Utils;
 import io.github.gaming32.python4j.objects.PyLong;
 import io.github.gaming32.python4j.objects.PyNoneType;
 import io.github.gaming32.python4j.objects.PyObject;

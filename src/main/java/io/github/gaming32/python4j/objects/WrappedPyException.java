@@ -58,6 +58,10 @@ public final class WrappedPyException extends RuntimeException {
                             functionName.equals("main") &&
                             Arrays.equals(method.getParameterTypes(), new Class[] { String[].class })
                         ) continue stackWalker;
+                        if (
+                            functionName.equals("init") &&
+                            Arrays.equals(method.getParameterTypes(), new Class[0])
+                        ) continue stackWalker;
                         final PyMethodInfo anno = method.getAnnotation(PyMethodInfo.class);
                         if (anno == null) continue;
                         functionName = ((PyCodeObject)codeStructure.getRef(anno.codeRefId())).getCo_name().toString();

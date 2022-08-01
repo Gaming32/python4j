@@ -1,4 +1,4 @@
-package io.github.gaming32.python4j;
+package io.github.gaming32.python4j.util;
 import java.lang.reflect.Field;
 import java.nio.ByteOrder;
 

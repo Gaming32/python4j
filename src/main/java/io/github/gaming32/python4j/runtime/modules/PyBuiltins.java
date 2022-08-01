@@ -28,21 +28,8 @@ public final class PyBuiltins extends JavaVirtualModule {
     @ModuleConstant
     public static final PyBool False = PyBool.PyFalse;
 
-    public PyBuiltins() {
-        super("builtins");
-    }
-
-    private static String getStringArgOrDefault(PyArguments args, String key, String def) {
-        final PyObject valuePy = args.getKwarg(key, PyNoneType.PyNone);
-        final String value;
-        if (valuePy == PyNoneType.PyNone) {
-            value = def;
-        } else if (valuePy instanceof PyUnicode) {
-            value = valuePy.toString();
-        } else {
-            throw new IllegalArgumentException(key + " must be None or a string, not " + valuePy.getClass().getSimpleName());
-        }
-        return value;
+    public PyBuiltins(String name) {
+        super(name);
     }
 
     private static BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(FileDescriptor.out), 512);

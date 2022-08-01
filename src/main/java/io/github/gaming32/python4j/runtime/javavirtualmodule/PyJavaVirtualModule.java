@@ -1,25 +1,32 @@
 package io.github.gaming32.python4j.runtime.javavirtualmodule;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandleProxies;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.runtime.PyArguments;
-import io.github.gaming32.python4j.runtime.PySimpleFunctionObject;
 import io.github.gaming32.python4j.runtime.PyModule;
+import io.github.gaming32.python4j.runtime.PySimpleFunctionObject;
+import io.github.gaming32.python4j.util.AutoComputingAbsentMap;
 
 public final class PyJavaVirtualModule implements PyModule {
     private static class PropertyWrapper {
@@ -66,29 +73,84 @@ public final class PyJavaVirtualModule implements PyModule {
         }
     }
 
-    public static Map<String, PyModule> getVirtualModules() throws IllegalAccessException {
+    public static Map<String, PyModule> getVirtualModules() throws IOException {
         if (virtualModules != null) return virtualModules;
+        final Map<String, Object> moduleLocations = new HashMap<>();
         try {
-            return virtualModules = ServiceLoader.load(JavaVirtualModuleMarker.class)
-                .stream()
-                .map(p -> {
-                    try {
-                        return new PyJavaVirtualModule((JavaVirtualModule)p.get());
-                    } catch (IllegalAccessException e) {
-                        throw new RuntimeException(e);
+            for (final URL resource : (Iterable<URL>)() -> {
+                try {
+                    return PyJavaVirtualModule.class.getClassLoader().getResources("META-INF/python-modules").asIterator();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.openStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        final int hashIndex = line.indexOf('#');
+                        if (hashIndex >= 0) line = line.substring(0, hashIndex);
+                        line = line.trim();
+                        if (line.isEmpty()) continue;
+                        final int equalsIndex = line.indexOf('=');
+                        if (equalsIndex == -1) {
+                            // Use the line for the key, I guess. The user didn't specify a proper key/value pair.
+                            moduleLocations.put(line, new RuntimeException("Line in python-modules missing module declaration: " + line));
+                            continue;
+                        }
+                        final String moduleName = line.substring(0, equalsIndex);
+                        final int slashIndex = line.indexOf('/', equalsIndex);
+                        if (slashIndex == -1) {
+                            moduleLocations.put(moduleName, new RuntimeException("Line in python-modules missing module source type: " + line));
+                            continue;
+                        }
+                        final String sourceType = line.substring(equalsIndex + 1, slashIndex);
+                        if (!sourceType.equals("java")) {
+                            moduleLocations.put(moduleName, new RuntimeException("Line in python-modules has unsupported source type: " + line));
+                            continue;
+                        }
+                        moduleLocations.put(moduleName, line.substring(slashIndex + 1));
                     }
-                })
-                .collect(Collectors.toMap(m -> m.getName(), Function.identity()));
+                }
+            }
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
+        return new AutoComputingAbsentMap<>(new HashMap<>(), key -> {
+            final Object maybeLocation = moduleLocations.get(key);
+            if (maybeLocation == null) {
+                return null;
+            }
+            if (maybeLocation instanceof RuntimeException) {
+                final RuntimeException e = (RuntimeException)maybeLocation;
+                e.setStackTrace(new Throwable().getStackTrace());
+                throw e;
+            }
+            try {
+                final Class<?> clazz = Class.forName((String)maybeLocation);
+                final Constructor<?> constructor = clazz.getDeclaredConstructor(String.class);
+                return new PyJavaVirtualModule((JavaVirtualModule)constructor.newInstance(key));
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public static PyModule getVirtualModule(String module) throws ReflectiveOperationException, IOException {
+        try {
+            return getVirtualModules().get(module);
         } catch (RuntimeException e) {
-            if (e.getCause() instanceof IllegalAccessException) {
-                throw (IllegalAccessException)e.getCause();
+            if (e.getCause() instanceof ReflectiveOperationException) {
+                throw (ReflectiveOperationException)e.getCause();
+            }
+            if (e.getCause() instanceof IOException) {
+                throw (IOException)e.getCause();
             }
             throw e;
         }
     }
 
     @SuppressWarnings("unchecked")
-    private void computeContents(Class<? extends JavaVirtualModuleMarker> clazz, MethodHandles.Lookup lookup) throws IllegalAccessException {
+    private void computeContents(Class<? extends JavaVirtualModule> clazz, MethodHandles.Lookup lookup) throws IllegalAccessException {
         for (final Field field : clazz.getFields()) {
             if (!Modifier.isStatic(field.getModifiers())) continue;
             final ModuleConstant anno = field.getAnnotation(ModuleConstant.class);

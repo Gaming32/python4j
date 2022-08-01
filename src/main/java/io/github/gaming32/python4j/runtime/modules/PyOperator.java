@@ -8,8 +8,8 @@ import io.github.gaming32.python4j.runtime.javavirtualmodule.JavaVirtualModule;
 import io.github.gaming32.python4j.runtime.javavirtualmodule.ModuleMethod;
 
 public final class PyOperator extends JavaVirtualModule {
-    public PyOperator() {
-        super("_operator");
+    public PyOperator(String name) {
+        super(name);
     }
 
     @ModuleMethod("truthy")

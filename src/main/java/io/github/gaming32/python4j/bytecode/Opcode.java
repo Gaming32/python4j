@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.github.gaming32.python4j.Utils;
+import io.github.gaming32.python4j.util.Utils;
 
 public final class Opcode {
     public static final List<String> CMP_OP = List.of("<", "<=", "==", "!=", ">", ">=");

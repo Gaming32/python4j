@@ -13,7 +13,6 @@ import io.github.gaming32.python4j.objects.PyList;
 import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.objects.PySet;
 import io.github.gaming32.python4j.objects.PyTuple;
-import io.github.gaming32.python4j.objects.PyUnicode;
 import io.github.gaming32.python4j.objects.SupportsToArray;
 import io.github.gaming32.python4j.objects.WrappedPyException;
 import io.github.gaming32.python4j.runtime.javavirtualmodule.PyJavaVirtualModule;
@@ -42,8 +41,11 @@ public final class PyRuntime {
         if (global == null) {
             if (builtins == null) {
                 try {
-                    builtins = PyJavaVirtualModule.getVirtualModules().get("builtins");
-                } catch (IllegalAccessException e) {
+                    builtins = PyJavaVirtualModule.getVirtualModule("builtins");
+                } catch (Exception e) {
+                    throw new Error(e); // If we can't load builtins due to an exception, there's something really wrong
+                }
+                if (builtins == null) {
                     builtins = new EmptyModule("builtins");
                 }
             }

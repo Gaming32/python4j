@@ -1,0 +1,2 @@
+builtins=java/io.github.gaming32.python4j.runtime.modules.PyBuiltins
+_operator=java/io.github.gaming32.python4j.runtime.modules.PyOperator

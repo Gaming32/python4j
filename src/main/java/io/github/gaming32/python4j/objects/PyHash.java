@@ -4,7 +4,7 @@ import java.security.SecureRandom;
 import java.util.OptionalLong;
 import java.util.function.ToLongFunction;
 
-import io.github.gaming32.python4j.UnsafeUtil;
+import io.github.gaming32.python4j.util.UnsafeUtil;
 import sun.misc.Unsafe;
 
 public final class PyHash {
