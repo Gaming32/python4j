@@ -12,6 +12,31 @@ public class PyObject {
         return PyUnicode.fromString("<" + getClass().getSimpleName() + " object 0x" + Integer.toHexString(hashCode()) + ">");
     }
 
+    public PyUnicode __ascii__() {
+        final PyUnicode repr = __repr__();
+        if (repr.isAscii()) return repr;
+        final PyUnicode.Builder result = new PyUnicode.Builder(repr.length() + 8);
+        for (int i = 0, n = repr.length(); i < n; i++) {
+            final int ch = repr.getCodePoint(i);
+            if (ch < 0x80) {
+                result.append(ch);
+            } else if (ch < 0xff) {
+                result.append('\\').append('x');
+                if (ch < 0x10) {
+                    result.append('0').append(Character.forDigit(ch & 0xf, 16));
+                } else {
+                    result.append(Character.forDigit(ch >> 4, 16))
+                        .append(Character.forDigit(ch & 0xf, 16));
+                }
+            } else if (ch < 0x10000) {
+                result.appendJavaString(String.format("\\u%04x", ch));
+            } else {
+                result.appendJavaString(String.format("\\U%08x", ch));
+            }
+        }
+        return result.finish();
+    }
+
     public PyUnicode __format__(PyUnicode formatSpec) {
         throw new WrappedPyException(PyException::new, "Type " + getClass().getSimpleName() + " doesn't define __format__");
     }

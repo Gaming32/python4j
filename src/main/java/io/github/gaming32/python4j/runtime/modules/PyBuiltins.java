@@ -74,6 +74,15 @@ public final class PyBuiltins extends JavaVirtualModule {
         return args.getArg(0).__repr__();
     }
 
+    public static String ascii(PyObject obj) {
+        return obj.__ascii__().toString();
+    }
+
+    @ModuleMethod
+    public static PyObject ascii(PyArguments args) {
+        return args.getArg(0).__ascii__();
+    }
+
     @ModuleMethod
     public static PyObject divmod(PyArguments args) {
         return PyOperator.pyDivmod(args);
