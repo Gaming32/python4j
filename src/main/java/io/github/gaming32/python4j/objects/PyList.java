@@ -86,7 +86,7 @@ public class PyList extends PyObject implements SupportsToArray {
     @Override
     public PyObject __add__(PyObject other) {
         if (!(other instanceof PyList)) {
-            throw new WrappedPyException(PyException::new, "TypeError: can only concatenate list (not \"" + other.getClass().getSimpleName() + "\") to list");
+            return PyNotImplemented.NotImplemented;
         }
         return concat((PyList)other);
     }

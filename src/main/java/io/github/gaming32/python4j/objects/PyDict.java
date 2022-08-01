@@ -11,6 +11,10 @@ public class PyDict extends PyObject implements SupportsToArray {
         elements = new LinkedHashMap<>();
     }
 
+    private PyDict(Map<PyObject, PyObject> elements) {
+        this.elements = elements;
+    }
+
     public static PyDict empty() {
         return new PyDict();
     }
@@ -81,5 +85,21 @@ public class PyDict extends PyObject implements SupportsToArray {
     @Override
     public boolean __bool__() {
         return !elements.isEmpty();
+    }
+
+    public PyDict copy() {
+        return new PyDict(new LinkedHashMap<>(elements));
+    }
+
+    @Override
+    public PyObject __or__(PyObject other) {
+        if (!(other instanceof PyDict)) {
+            return PyNotImplemented.NotImplemented;
+        }
+        final PyDict otherDict = (PyDict)other;
+        final PyDict result = new PyDict(new LinkedHashMap<>(elements.size() + otherDict.elements.size() + 1));
+        result.elements.putAll(elements);
+        result.elements.putAll(otherDict.elements);
+        return result;
     }
 }

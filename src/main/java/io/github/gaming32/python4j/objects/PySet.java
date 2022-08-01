@@ -83,6 +83,52 @@ public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArr
     }
 
     @Override
+    public PyObject __and__(PyObject other) {
+        if (other instanceof PySet) {
+            final PySet result = new PySet();
+            for (final PyObject otherElement : ((PySet)other).elements) {
+                if (elements.contains(otherElement)) {
+                    result.elements.add(otherElement);
+                }
+            }
+            return result;
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    @Override
+    public PyObject __sub__(PyObject other) {
+        if (other instanceof PySet) {
+            final PySet result = new PySet(this);
+            for (final PyObject otherElement : ((PySet)other).elements) {
+                result.elements.remove(otherElement);
+            }
+            return result;
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    @Override
+    public PyObject __xor__(PyObject other) {
+        if (other instanceof PySet) {
+            final PySet result = new PySet();
+            final Set<PyObject> otherElements = ((PySet)other).elements;
+            for (final PyObject element : elements) {
+                if (!otherElements.contains(element)) {
+                    result.elements.add(element);
+                }
+            }
+            for (final PyObject element : otherElements) {
+                if (!elements.contains(element)) {
+                    result.elements.add(element);
+                }
+            }
+            return result;
+        }
+        return PyNotImplemented.NotImplemented;
+    }
+
+    @Override
     public long hashAnyway() {
         long hash = 0;
         for (PyObject element : elements) {
