@@ -16,6 +16,9 @@ public final class PycFile {
 
     private PycFile(MarshalReader in) throws IOException {
         version = in.readShort();
+        if (in.readByte() != '\r' | in.readByte() != '\n') {
+            throw new RuntimeException("Invalid Python bytecode magic");
+        }
         if (version < MIN_VERSION_SUPPORTED) {
             throw new RuntimeException(
                 "Python bytecode version " + versionDisplayName(version) +
@@ -27,9 +30,6 @@ public final class PycFile {
                 "Python bytecode version " + versionDisplayName(version) +
                 " newer than maximum supported version " + versionDisplayName(MAX_VERSION_SUPPORTED)
             );
-        }
-        if (in.readByte() != '\r' | in.readByte() != '\n') {
-            throw new RuntimeException("Invalid Python bytecode magic");
         }
         metadata = new int[] {
             in.readLong(),
