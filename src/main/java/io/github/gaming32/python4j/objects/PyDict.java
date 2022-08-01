@@ -37,16 +37,16 @@ public class PyDict extends PyObject implements SupportsToArray {
 
     @Override
     public PyUnicode __repr__() {
-        StringBuilder sb = new StringBuilder("{");
+        final PyUnicode.Builder result = new PyUnicode.Builder().append('{');
         for (Map.Entry<PyObject, PyObject> entry : elements.entrySet()) {
-            if (sb.length() > 1) {
-                sb.append(", ");
+            if (result.length() > 1) {
+                result.append(',').append(' ');
             }
-            sb.append(entry.getKey().__repr__());
-            sb.append(": ");
-            sb.append(entry.getValue().__repr__());
+            result.append(entry.getKey().__repr__());
+            result.append(':').append(' ');
+            result.append(entry.getValue().__repr__());
         }
-        return PyUnicode.fromString(sb.append('}').toString());
+        return result.append('}').finish();
     }
 
     @Override

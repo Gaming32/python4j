@@ -35,15 +35,14 @@ public class PySet extends PyObject implements Iterable<PyObject>, SupportsToArr
 
     @Override
     public PyUnicode __repr__() {
-        StringBuilder sb = new StringBuilder("{");
-        Iterator<PyObject> values = elements.iterator();
-        while (values.hasNext()) {
-            if (sb.length() > 1) {
-                sb.append(", ");
+        final PyUnicode.Builder result = new PyUnicode.Builder().append('{');
+        for (final PyObject value : elements) {
+            if (result.length() > 1) {
+                result.append(',').append(' ');
             }
-            sb.append(values.next().__repr__());
+            result.append(value.__repr__());
         }
-        return PyUnicode.fromString(sb.append("}").toString());
+        return result.append('}').finish();
     }
 
     @Override

@@ -1,7 +1,1 @@
-x1 = {'foo', 'bar', 'baz'}
-x2 = {'baz', 'qux', 'quux'}
-
-print('|', x1 | x2)
-print('&', x1 & x2)
-print('-', x1 - x2)
-print('^', x1 ^ x2)
+print(repr('hello world \u001b \u1234 \U00012345 😋'))

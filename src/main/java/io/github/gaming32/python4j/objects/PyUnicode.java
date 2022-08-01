@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import io.github.gaming32.python4j.CharType;
+import io.github.gaming32.python4j.UnicodeType;
 
 public class PyUnicode extends PyObject {
     private static final class GlobalStrings {
@@ -24,6 +25,173 @@ public class PyUnicode extends PyObject {
         }
     }
 
+    /** StringBuilder equivalent for PyUnicode */
+    public static final class Builder {
+        byte[] data;
+        int length;
+        byte kind;
+        boolean isAscii;
+
+        public Builder() {
+            data = new byte[16];
+            length = 0;
+            kind = KIND_1BYTE;
+            isAscii = true;
+        }
+
+        public Builder(int capacity) {
+            data = new byte[capacity];
+            length = 0;
+            kind = KIND_1BYTE;
+            isAscii = true;
+        }
+
+        public Builder(PyUnicode other) {
+            data = Arrays.copyOf(other.data, other.data.length + 16);
+            length = other.data.length;
+            kind = other.getKind();
+            isAscii = other.isAscii();
+        }
+
+        private void ensureCapacity(int capacity) {
+            if (length + capacity > data.length) {
+                data = Arrays.copyOf(data, getNewSize(data.length, capacity));
+            }
+        }
+
+        private static int getNewSize(int size, int minimum) {
+            return Math.max(size * 2, size + minimum);
+        }
+
+        public int length() {
+            return length >> kind;
+        }
+
+        public Builder append(PyUnicode other) {
+            final byte otherKind = other.getKind();
+            if (otherKind > kind) {
+                byte[] newData = new byte[getNewSize(data.length << (otherKind - kind), other.data.length)];
+                inflate(data, newData, 0, length, kind, otherKind);
+                System.arraycopy(other.data, 0, newData, length << (otherKind - kind), other.data.length);
+                data = newData;
+                kind = otherKind;
+                length = (length << (otherKind - kind)) + other.data.length;
+                isAscii &= other.isAscii();
+            } else if (otherKind == kind) {
+                ensureCapacity(other.data.length);
+                System.arraycopy(other.data, 0, data, length, other.data.length);
+                length += other.data.length;
+                isAscii = false;
+            } else /* otherKind < kind */ {
+                ensureCapacity(other.data.length << (kind - otherKind));
+                inflate(other.data, data, length, other.data.length, otherKind, kind);
+                length += other.data.length << (kind - otherKind);
+                isAscii = false;
+            }
+            return this;
+        }
+
+        public Builder append(int ch) {
+            if (ch < 255) {
+                ensureCapacity(1 << kind);
+                putKind(data, length >> kind, ch, kind);
+                if (ch > 127) {
+                    isAscii = false;
+                }
+                length += 1 << kind;
+            } else if (ch < 65536) {
+                byte[] newData;
+                if (kind < KIND_2BYTE) {
+                    newData = new byte[getNewSize(data.length, 1) << KIND_2BYTE];
+                    inflate(data, newData, 0, length, kind, KIND_2BYTE);
+                    length <<= 1;
+                    kind = KIND_2BYTE;
+                } else {
+                    ensureCapacity(1 << kind);
+                    newData = data;
+                }
+                putKind(newData, length >> kind, ch, kind);
+                length += 1 << kind;
+                data = newData;
+                isAscii = false;
+            } else {
+                if (ch > MAX_UNICODE) {
+                    throw new IllegalArgumentException("Unicode character out of range: " + ch);
+                }
+                byte[] newData;
+                if (kind < KIND_4BYTE) {
+                    newData = new byte[getNewSize(data.length, 1) << (KIND_4BYTE - kind)];
+                    inflate(data, newData, 0, length, kind, KIND_4BYTE);
+                    length <<= KIND_4BYTE - kind;
+                    kind = KIND_4BYTE;
+                } else {
+                    ensureCapacity(1 << kind);
+                    newData = data;
+                }
+                putKind(newData, length >> kind, ch, kind);
+                length += 1 << kind;
+                data = newData;
+                isAscii = false;
+            }
+            return this;
+        }
+
+        public Builder appendInt(int i) {
+            return append(PyLong.fromInt(i).__repr__());
+        }
+
+        public Builder appendJavaString(String s) {
+            byte otherKind = KIND_1BYTE;
+            boolean isAscii = true;
+            for (int i = 0; i < s.length(); i++) {
+                int cp = s.codePointAt(i);
+                if (cp > 127) {
+                    isAscii = false;
+                    if (cp > 255) {
+                        otherKind = KIND_2BYTE;
+                        if (cp > 65535) {
+                            otherKind = KIND_4BYTE;
+                            break;
+                        }
+                    }
+                }
+            }
+            final int n = otherKind == KIND_4BYTE ? s.codePointCount(0, s.length()) : s.length();
+            int outPos = length;
+            if (otherKind > kind) {
+                byte[] newData = new byte[getNewSize(data.length, n << otherKind)];
+                inflate(data, newData, 0, length, kind, otherKind);
+                data = newData;
+                kind = otherKind;
+                length = (length << (otherKind - kind)) + (n << otherKind);
+                this.isAscii &= isAscii;
+            } else if (otherKind == kind) {
+                ensureCapacity(n << otherKind);
+                length += n << otherKind;
+            } else /* otherKind < kind */ {
+                ensureCapacity(n << kind);
+                length += n << kind;
+            }
+            outPos >>= kind;
+            if (otherKind < KIND_4BYTE) {
+                for (int i = 0; i < s.length(); i++) {
+                    putKind(data, outPos++, s.charAt(i), kind);
+                }
+            } else {
+                for (int i = 0; i < s.length();) {
+                    final int cp = s.codePointAt(i);
+                    putKind(data, outPos++, cp, kind);
+                    i += Character.charCount(cp);
+                }
+            }
+            return this;
+        }
+
+        public PyUnicode finish() {
+            return new PyUnicode(Arrays.copyOf(data, length), (byte)(kind | FLAG_COMPACT | (isAscii ? FLAG_ASCII : 0)));
+        }
+    }
+
     public static final Charset UTF_32BE = Charset.forName("UTF-32BE");
 
     private static final int MAX_UNICODE = 0x10ffff;
@@ -31,12 +199,12 @@ public class PyUnicode extends PyObject {
     public static final byte KIND_1BYTE = 0x0;
     public static final byte KIND_2BYTE = 0x1;
     public static final byte KIND_4BYTE = 0x2;
-    private static final int KIND_MASK = KIND_1BYTE | KIND_2BYTE | KIND_4BYTE;
+    private static final byte KIND_MASK = KIND_1BYTE | KIND_2BYTE | KIND_4BYTE;
 
-    private static final int FLAG_COMPACT = 0x4;
-    private static final int FLAG_ASCII = 0x8;
-    private static final int FLAG_INTERNED = 0x10;
-    private static final int FLAG_SHIFT = 3;
+    private static final byte FLAG_COMPACT = 0x4;
+    private static final byte FLAG_ASCII = 0x8;
+    private static final byte FLAG_INTERNED = 0x10;
+    private static final byte FLAG_SHIFT = 3;
 
     private long hash = -1L;
     private byte kindAndFlags;
@@ -84,40 +252,54 @@ public class PyUnicode extends PyObject {
                 break;
             }
         }
-        char quote, escapeQuote;
+        char quote;
         if (hasSingleQuote) {
             quote = '"';
-            escapeQuote = '\'';
         } else {
             quote = '\'';
-            escapeQuote = '"';
         }
-        StringBuilder sb = new StringBuilder().append(quote);
+        final Builder result = new Builder().append(quote);
         for (int i = 0; i < length(); i++) {
             int c = getCodePoint(i);
-            if (c >= 32 && c < 128) {
-                sb.append((char)c);
-            } else if (c == escapeQuote) {
-                sb.append('\\').append(escapeQuote);
+            if (c >= ' ' && c < 0x7F) {
+                result.append((char)c);
+            } else if (c == quote) {
+                result.append('\\').append(quote);
             } else if (c == '\n') {
-                sb.append("\\n");
+                result.append('\\').append('n');
             } else if (c == '\r') {
-                sb.append("\\r");
+                result.append('\\').append('r');
             } else if (c == '\t') {
-                sb.append("\\t");
+                result.append('\\').append('t');
             } else if (c == '\f') {
-                sb.append("\\f");
+                result.append('\\').append('f');
             } else if (c == '\b') {
-                sb.append("\\b");
-            }  else if (c < 0x100) {
-                sb.append("\\x").append(String.format("%02x", c));
+                result.append('\\').append('b');
+            } else if (c < ' ' || c == 0x7F) {
+                result.append('\\').append('x');
+                if (c < 0x10) {
+                    result.append('0').append(Character.forDigit(c & 0xf, 16));
+                } else {
+                    result.append(Character.forDigit(c >> 4, 16))
+                        .append(Character.forDigit(c & 0xf, 16));
+                }
+            } else if (UnicodeType.isPrintable(c)) {
+                result.append(c);
+            } else if (c < 0xff) {
+                result.append('\\').append('x');
+                if (c < 0x10) {
+                    result.append('0').append(Character.forDigit(c & 0xf, 16));
+                } else {
+                    result.append(Character.forDigit(c >> 4, 16))
+                        .append(Character.forDigit(c & 0xf, 16));
+                }
             } else if (c < 0x10000) {
-                sb.append("\\u").append(String.format("%04x", c));
+                result.appendJavaString(String.format("\\u%04x", c));
             } else {
-                sb.append("\\U").append(String.format("%08x", c));
+                result.appendJavaString(String.format("\\U%08x", c));
             }
         }
-        return fromString(sb.append(quote).toString());
+        return result.append(quote).finish();
     }
 
     public int length() {

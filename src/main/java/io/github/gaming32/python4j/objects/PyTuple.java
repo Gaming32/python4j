@@ -70,17 +70,17 @@ public class PyTuple extends PyObject implements Iterable<PyObject>, SupportsToA
 
     @Override
     public PyUnicode __repr__() {
-        StringBuilder sb = new StringBuilder("(");
+        final PyUnicode.Builder result = new PyUnicode.Builder().append('(');
         for (int i = 0; i < elements.length; i++) {
             if (i > 0) {
-                sb.append(", ");
+                result.append(',').append(' ');
             }
-            sb.append(elements[i].__repr__());
+            result.append(elements[i].__repr__());
         }
         if (elements.length == 1) {
-            sb.append(',');
+            result.append(',');
         }
-        return PyUnicode.fromString(sb.append(')').toString());
+        return result.append(')').finish();
     }
 
     @Override

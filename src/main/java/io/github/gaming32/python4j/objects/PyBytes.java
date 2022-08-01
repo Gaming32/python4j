@@ -59,35 +59,39 @@ public class PyBytes extends PyVarObject {
                 break;
             }
         }
-        char quote, escapeQuote;
+        char quote;
         if (hasSingleQuote) {
             quote = '"';
-            escapeQuote = '\'';
         } else {
             quote = '\'';
-            escapeQuote = '"';
         }
-        StringBuilder sb = new StringBuilder("b").append(quote);
+        final PyUnicode.Builder result = new PyUnicode.Builder().append('b').append(quote);
         for (byte b : bytes) {
-            if (b == escapeQuote) {
-                sb.append('\\').append(escapeQuote);
+            if (b == quote) {
+                result.append('\\').append(quote);
             } else if (b == '\n') {
-                sb.append("\\n");
+                result.append('\\').append('n');
             } else if (b == '\r') {
-                sb.append("\\r");
+                result.append('\\').append('r');
             } else if (b == '\t') {
-                sb.append("\\t");
+                result.append('\\').append('t');
             } else if (b == '\f') {
-                sb.append("\\f");
+                result.append('\\').append('f');
             } else if (b == '\b') {
-                sb.append("\\b");
+                result.append('\\').append('b');
             } else if (b >= 32) {
-                sb.append((char)b);
+                result.append(b);
             } else {
-                sb.append("\\x").append(String.format("%02x", b & 0xff));
+                result.append('\\').append('x');
+                if ((b & 0xff) < 0x10) {
+                    result.append('0').append(Character.forDigit(b & 0xf, 16));
+                } else {
+                    result.append(Character.forDigit(b >> 4 & 0xf, 16))
+                        .append(Character.forDigit(b & 0xf, 16));
+                }
             }
         }
-        return PyUnicode.fromString(sb.append(quote).toString());
+        return result.append(quote).finish();
     }
 
     public byte[] toByteArray() {
