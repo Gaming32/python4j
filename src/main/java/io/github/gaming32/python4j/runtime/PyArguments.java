@@ -42,6 +42,10 @@ public final class PyArguments {
         return args[index];
     }
 
+    public PyObject getArg(int index, PyObject def) {
+        return index < args.length ? args[index] : def;
+    }
+
     public int getNArgs() {
         return args.length;
     }

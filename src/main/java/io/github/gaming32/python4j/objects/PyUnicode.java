@@ -166,6 +166,35 @@ public class PyUnicode extends PyObject {
         );
     }
 
+    public PyUnicode concatMultiple(PyUnicode... others) {
+        int resultKind = getKind(), kind = resultKind;
+        int resultLength = length();
+        int isAscii = kindAndFlags & FLAG_ASCII;
+        for (PyUnicode other : others) {
+            resultKind = Math.max(resultKind, other.getKind());
+            resultLength += other.length();
+            isAscii &= other.kindAndFlags & FLAG_ASCII;
+        }
+        final byte[] result = new byte[resultLength << resultKind];
+        int dest;
+        if (kind == resultKind) {
+            System.arraycopy(data, 0, result, 0, dest = data.length);
+        } else {
+            inflate(data, result, 0, data.length, kind, resultKind);
+            dest = data.length << (resultKind - kind);
+        }
+        for (PyUnicode other : others) {
+            if (other.getKind() == resultKind) {
+                System.arraycopy(other.data, 0, result, dest, other.data.length);
+                dest += other.data.length;
+            } else {
+                inflate(other.data, result, dest, other.data.length, other.getKind(), resultKind);
+                dest += other.data.length << (resultKind - other.getKind());
+            }
+        }
+        return new PyUnicode(result, resultKind | isAscii | FLAG_COMPACT);
+    }
+
     private static void inflate(byte[] in, byte[] out, int dest, int len, int fromKind, int toKind) {
         final int inBytes = 1 << fromKind;
         final int padBytes = (1 << toKind) - inBytes;
@@ -449,27 +478,44 @@ public class PyUnicode extends PyObject {
     }
 
     public static PyUnicode fromString(String s) {
-        boolean utf16 = false;
+        int kind = KIND_1BYTE;
         boolean isAscii = true;
-        for (int i = 0; i < s.length(); i++) {
-            final char c = s.charAt(i);
-            if (c > 127) {
+        for (int i = 0; i < s.length();) {
+            int cp = s.codePointAt(i);
+            if (cp > 127) {
                 isAscii = false;
-                if (c > 255) {
-                    utf16 = true;
-                    break;
+                if (cp > 255) {
+                    kind = KIND_2BYTE;
+                    if (cp > 65535) {
+                        kind = KIND_4BYTE;
+                        break;
+                    }
                 }
             }
+            i += Character.charCount(cp);
         }
-        if (utf16) {
-            final int[] codePoints = new int[s.codePointCount(0, s.length())];
-            if (codePoints.length == s.length()) {
-                return new PyUnicode(s.getBytes(StandardCharsets.UTF_16BE), FLAG_COMPACT | KIND_2BYTE);
-            } else {
-                return new PyUnicode(s.getBytes(UTF_32BE), FLAG_COMPACT | KIND_4BYTE);
+        final byte[] result = new byte[(kind == KIND_4BYTE ? s.codePointCount(0, s.length()) : s.length()) << kind];
+        if (kind == KIND_1BYTE) {
+            for (int i = 0; i < s.length(); i++) {
+                result[i] = (byte)s.charAt(i);
+            }
+        } else if (kind == KIND_2BYTE) {
+            for (int i = 0; i < s.length(); i++) {
+                char ch = s.charAt(i);
+                result[i << 1] = (byte)(ch >> 8);
+                result[(i << 1) + 1] = (byte)ch;
+            }
+        } else {
+            for (int i = 0, j = 0; j < result.length; j += 4) {
+                int cp = s.codePointAt(i);
+                result[j] = (byte)(cp >>> 24);
+                result[j + 1] = (byte)(cp >> 16);
+                result[j + 2] = (byte)(cp >> 8);
+                result[j + 3] = (byte)cp;
+                i += Character.charCount(cp);
             }
         }
-        return new PyUnicode(s.getBytes(StandardCharsets.ISO_8859_1), FLAG_COMPACT | KIND_1BYTE | (isAscii ? FLAG_ASCII : 0));
+        return new PyUnicode(result, FLAG_COMPACT | kind | (isAscii ? FLAG_ASCII : 0));
     }
 
     public static PyUnicode fromCharArray(char[] s) {

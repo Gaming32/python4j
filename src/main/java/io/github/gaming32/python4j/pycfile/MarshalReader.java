@@ -40,8 +40,15 @@ public class MarshalReader extends FilterInputStream {
     }
 
     public void readFully(byte[] b, int off, int len) throws IOException {
-        final int read = in.read(b, off, len);
-        if (read != len && !(read == -1 && len == 0)) {
+        while (len > 0) {
+            final int n = in.read(b, off, len);
+            if (n == -1) {
+                break;
+            }
+            off += n;
+            len -= n;
+        }
+        if (len > 0) {
             throw new MarshalException("marshal data too short");
         }
     }
@@ -269,7 +276,7 @@ public class MarshalReader extends FilterInputStream {
                     readFully(b);
                     result = PyUnicode.decodeUTF8(b, n, "surrogatepass");
                 } else {
-                    result = PyUnicode.fromSizeAndMax(0, 0);
+                    result = PyUnicode.empty();
                 }
                 readRef(result, flag);
                 break;

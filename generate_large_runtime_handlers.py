@@ -94,6 +94,22 @@ with open(PATH, 'w') as fp:
         prn()
 
 
+    # public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2) {
+    #     return v0.__str__().concatMultiple(v1.__str__(), v2.__str__());
+    # }
+    for i in range(3, 16):
+        prn('public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2', end='')
+        for j in range(3, i + 1):
+            prn(f', PyObject v{j}', end='')
+        prn(') {')
+        prn('    return v0.__str__().concatMultiple(v1.__str__(), v2.__str__()', end='')
+        for j in range(3, i + 1):
+            prn(f', v{j}.__str__()', end='')
+        prn(');')
+        prn('}')
+        prn()
+
+
     # public static PyObject call(PyObject o1, PyObject o2, PyObject o3) {
     #     if (o1 == null) {
     #         return o2.__call__(new PyArguments(kwNames, o3));

@@ -1,1 +1,4 @@
-print('https://getemoji.com/: 😋 Get Emoji — All Emojis to ✂️ Copy and 📋 Paste 👌')
+a = 'Hello '
+b = 'world!'
+c = ' 😋!'
+print(f'{a}{b}{c}')

@@ -13,6 +13,7 @@ import io.github.gaming32.python4j.objects.PyList;
 import io.github.gaming32.python4j.objects.PyObject;
 import io.github.gaming32.python4j.objects.PySet;
 import io.github.gaming32.python4j.objects.PyTuple;
+import io.github.gaming32.python4j.objects.PyUnicode;
 import io.github.gaming32.python4j.objects.SupportsToArray;
 import io.github.gaming32.python4j.objects.WrappedPyException;
 import io.github.gaming32.python4j.runtime.javavirtualmodule.PyJavaVirtualModule;
@@ -115,6 +116,14 @@ public final class PyRuntime {
         final PyDict result = PyDict.empty();
         result.setItem(keyTuple.getItem(0), v0);
         return result;
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1) {
+        return v0.__str__().concat(v1.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__());
     }
 
     public static PyObject listToTuple(PyObject list) {
@@ -1045,6 +1054,58 @@ public final class PyRuntime {
         result.setItem(keyTuple.getItem(13), v13);
         result.setItem(keyTuple.getItem(14), v14);
         return result;
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4, PyObject v5) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__(), v5.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4, PyObject v5, PyObject v6) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__(), v5.__str__(), v6.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4, PyObject v5, PyObject v6, PyObject v7) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__(), v5.__str__(), v6.__str__(), v7.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4, PyObject v5, PyObject v6, PyObject v7, PyObject v8) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__(), v5.__str__(), v6.__str__(), v7.__str__(), v8.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4, PyObject v5, PyObject v6, PyObject v7, PyObject v8, PyObject v9) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__(), v5.__str__(), v6.__str__(), v7.__str__(), v8.__str__(), v9.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4, PyObject v5, PyObject v6, PyObject v7, PyObject v8, PyObject v9, PyObject v10) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__(), v5.__str__(), v6.__str__(), v7.__str__(), v8.__str__(), v9.__str__(), v10.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4, PyObject v5, PyObject v6, PyObject v7, PyObject v8, PyObject v9, PyObject v10, PyObject v11) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__(), v5.__str__(), v6.__str__(), v7.__str__(), v8.__str__(), v9.__str__(), v10.__str__(), v11.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4, PyObject v5, PyObject v6, PyObject v7, PyObject v8, PyObject v9, PyObject v10, PyObject v11, PyObject v12) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__(), v5.__str__(), v6.__str__(), v7.__str__(), v8.__str__(), v9.__str__(), v10.__str__(), v11.__str__(), v12.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4, PyObject v5, PyObject v6, PyObject v7, PyObject v8, PyObject v9, PyObject v10, PyObject v11, PyObject v12, PyObject v13) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__(), v5.__str__(), v6.__str__(), v7.__str__(), v8.__str__(), v9.__str__(), v10.__str__(), v11.__str__(), v12.__str__(), v13.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4, PyObject v5, PyObject v6, PyObject v7, PyObject v8, PyObject v9, PyObject v10, PyObject v11, PyObject v12, PyObject v13, PyObject v14) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__(), v5.__str__(), v6.__str__(), v7.__str__(), v8.__str__(), v9.__str__(), v10.__str__(), v11.__str__(), v12.__str__(), v13.__str__(), v14.__str__());
+    }
+
+    public static PyObject buildString(PyObject v0, PyObject v1, PyObject v2, PyObject v3, PyObject v4, PyObject v5, PyObject v6, PyObject v7, PyObject v8, PyObject v9, PyObject v10, PyObject v11, PyObject v12, PyObject v13, PyObject v14, PyObject v15) {
+        return v0.__str__().concatMultiple(v1.__str__(), v2.__str__(), v3.__str__(), v4.__str__(), v5.__str__(), v6.__str__(), v7.__str__(), v8.__str__(), v9.__str__(), v10.__str__(), v11.__str__(), v12.__str__(), v13.__str__(), v14.__str__(), v15.__str__());
     }
 
     public static PyObject call(PyObject o1, PyObject o2, PyObject o3, PyObject o4) {

@@ -15,7 +15,8 @@
             "name": "Launch AppTest",
             "request": "launch",
             "mainClass": "io.github.gaming32.python4j.AppTest",
-            "projectName": "python4j"
+            "projectName": "python4j",
+            "vmArgs": ["-Dfile.encoding=utf-8"]
         },
         {
             "type": "java",

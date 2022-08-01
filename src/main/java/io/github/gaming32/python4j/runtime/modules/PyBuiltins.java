@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import io.github.gaming32.python4j.objects.PyBool;
+import io.github.gaming32.python4j.objects.PyLong;
 import io.github.gaming32.python4j.objects.PyNoneType;
 import io.github.gaming32.python4j.objects.PyNotImplemented;
 import io.github.gaming32.python4j.objects.PyObject;
@@ -89,5 +90,27 @@ public final class PyBuiltins extends JavaVirtualModule {
     @ModuleMethod
     public static PyObject divmod(PyArguments args) {
         return PyOperator.pyDivmod(args);
+    }
+
+    public static PyUnicode format(PyObject obj, PyUnicode formatSpec) {
+        if (formatSpec == null || formatSpec.length() == 0) {
+            if (obj.getClass() == PyUnicode.class) {
+                return (PyUnicode)obj;
+            }
+            if (obj.getClass() == PyLong.class) {
+                return obj.__str__();
+            }
+        }
+
+        if (formatSpec == null) {
+            formatSpec = PyUnicode.empty();
+        }
+
+        return obj.__format__(formatSpec);
+    }
+
+    @ModuleMethod
+    public static PyObject format(PyArguments args) {
+        return format(args.getArg(0), (PyUnicode)args.getArg(1, PyUnicode.empty()));
     }
 }

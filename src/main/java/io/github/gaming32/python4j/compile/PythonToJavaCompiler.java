@@ -63,13 +63,23 @@ public class PythonToJavaCompiler {
 
     static final String C_PYOBJECT = "io/github/gaming32/python4j/objects/PyObject";
     static final String C_PYTUPLE = "io/github/gaming32/python4j/objects/PyTuple";
+    static final String C_PYUNICODE = "io/github/gaming32/python4j/objects/PyUnicode";
     static final String C_PYCLASSINFO = "io/github/gaming32/python4j/runtime/annotation/PyClassInfo";
     static final String C_PYMETHODINFO = "io/github/gaming32/python4j/runtime/annotation/PyMethodInfo";
     static final String C_PYRUNTIME = "io/github/gaming32/python4j/runtime/PyRuntime";
     static final String C_CONDYBOOTSTRAPS = "io/github/gaming32/python4j/runtime/invoke/CondyBootstraps";
     static final String C_PYFRAME = "io/github/gaming32/python4j/runtime/PyFrame";
     static final String C_PYOPERATOR = "io/github/gaming32/python4j/runtime/modules/PyOperator";
+
     private static final String METHOD_DESCRIPTOR = "([L" + C_PYOBJECT + ";)L" + C_PYOBJECT + ";";
+
+    private static final int FVC_MASK =      0x3;
+    private static final int FVC_NONE =      0x0;
+    private static final int FVC_STR =       0x1;
+    private static final int FVC_REPR =      0x2;
+    private static final int FVC_ASCII =     0x3;
+    private static final int FVS_MASK =      0x4;
+    private static final int FVS_HAVE_SPEC = 0x4;
 
     private final String moduleName;
     private final PyCodeObject codeObj;
@@ -450,6 +460,16 @@ public class PythonToJavaCompiler {
                     }
                     break;
 
+                case Opcode.BUILD_STRING:
+                    if (arg == 0) {
+                        meth.invokestatic(C_PYUNICODE, "empty", "()L" + C_PYUNICODE + ";", false);
+                    } else if (arg == 1) {
+                        meth.invokevirtual(C_PYOBJECT, "__str__", "()L" + C_PYUNICODE + ";", false);
+                    } else {
+                        invokeRuntime(meth, "buildString", genericDescriptor(arg));
+                    }
+                    break;
+
                 case Opcode.LIST_TO_TUPLE:
                     invokeRuntime(meth, "listToTuple", genericDescriptor(2));
                     break;
@@ -690,6 +710,43 @@ public class PythonToJavaCompiler {
                 case Opcode.COMPARE_OP:
                     meth.invokestatic(C_PYOPERATOR, CMP_OP_NAMES[arg], genericDescriptor(2), false);
                     break;
+
+                case Opcode.FORMAT_VALUE: {
+                    final int whichConversion = arg & FVC_MASK;
+                    final boolean haveFmtSpec = (arg & FVS_MASK) == FVS_HAVE_SPEC;
+
+                    final String convFn;
+                    switch (whichConversion) {
+                        case FVC_NONE: convFn = null; break;
+                        case FVC_STR: convFn = "__str__"; break;
+                        case FVC_REPR: convFn = "__repr__"; break;
+                        default:
+                            throw new IllegalArgumentException("Unsupported FORMAT_VALUE conversion: " + whichConversion);
+                    }
+
+                    if (convFn != null) {
+                        if (haveFmtSpec) {
+                            meth.swap();
+                        }
+                        meth.invokevirtual(C_PYOBJECT, convFn, "()L" + C_PYUNICODE + ";", false);
+                        if (haveFmtSpec) {
+                            meth.swap();
+                        }
+                    }
+
+                    if (haveFmtSpec) {
+                        meth.visitTypeInsn(Opcodes.CHECKCAST, C_PYUNICODE);
+                    } else {
+                        meth.aconst(null);
+                    }
+                    meth.invokestatic(
+                        "io/github/gaming32/python4j/runtime/modules/PyBuiltins",
+                        "format",
+                        "(L" + C_PYOBJECT + ";L" + C_PYUNICODE + ";)L" + C_PYUNICODE + ";",
+                        false
+                    );
+                    break;
+                }
 
                 default:
                     throw new IllegalArgumentException("Unsupported opcode: " + Opcode.OP_NAME.get(op));

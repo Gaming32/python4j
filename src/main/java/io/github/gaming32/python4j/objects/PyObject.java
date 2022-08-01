@@ -12,6 +12,10 @@ public class PyObject {
         return PyUnicode.fromString("<" + getClass().getSimpleName() + " object 0x" + Integer.toHexString(hashCode()) + ">");
     }
 
+    public PyUnicode __format__(PyUnicode formatSpec) {
+        throw new WrappedPyException(PyException::new, "Type " + getClass().getSimpleName() + " doesn't define __format__");
+    }
+
     @Override
     public String toString() {
         return __str__().toString();
