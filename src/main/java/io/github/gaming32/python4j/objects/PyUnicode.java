@@ -74,8 +74,8 @@ public class PyUnicode extends PyObject {
                 inflate(data, newData, 0, length, kind, otherKind);
                 System.arraycopy(other.data, 0, newData, length << (otherKind - kind), other.data.length);
                 data = newData;
-                kind = otherKind;
                 length = (length << (otherKind - kind)) + other.data.length;
+                kind = otherKind;
                 isAscii &= other.isAscii();
             } else if (otherKind == kind) {
                 ensureCapacity(other.data.length);
