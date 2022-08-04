@@ -1,4 +1,5 @@
 package io.github.gaming32.python4j.util;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.nio.ByteOrder;
 
@@ -6,12 +7,19 @@ import sun.misc.Unsafe;
 
 public final class UnsafeUtil {
     private static final Unsafe UNSAFE;
+    private static final MethodHandles.Lookup TRUSTED_LOOKUP;
 
     static {
         try {
             final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
             unsafeField.setAccessible(true);
             UNSAFE = (Unsafe)unsafeField.get(null);
+
+            final Field implLookupField = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
+            TRUSTED_LOOKUP = (MethodHandles.Lookup)UNSAFE.getObject(
+                UNSAFE.staticFieldBase(implLookupField),
+                UNSAFE.staticFieldOffset(implLookupField)
+            );
         } catch (ReflectiveOperationException e) {
             throw new Error(e);
         }
@@ -19,6 +27,10 @@ public final class UnsafeUtil {
 
     public static Unsafe getUnsafe() {
         return UNSAFE;
+    }
+
+    public static MethodHandles.Lookup getTrustedLookup() {
+        return TRUSTED_LOOKUP;
     }
 
     /**

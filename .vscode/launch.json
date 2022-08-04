@@ -25,6 +25,22 @@
             "mainClass": "io.github.gaming32.python4j.CompilerTest",
             "projectName": "python4j",
             "vmArgs": ["-Dfile.encoding=utf-8"]
+        },
+        {
+            "type": "java",
+            "name": "Launch IOTest",
+            "request": "launch",
+            "mainClass": "io.github.gaming32.python4j.IOTest",
+            "projectName": "python4j",
+            "vmArgs": ["-Dfile.encoding=utf-8"]
+        },
+        {
+            "type": "java",
+            "name": "Launch CPythonTest",
+            "request": "launch",
+            "mainClass": "io.github.gaming32.python4j.CPythonTest",
+            "projectName": "python4j",
+            "vmArgs": ["-Dfile.encoding=utf-8"]
         }
     ]
 }

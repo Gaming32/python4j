@@ -4,20 +4,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import io.github.gaming32.python4j.util.Utils;
 
 public final class Opcode {
     public static final List<String> CMP_OP = List.of("<", "<=", "==", "!=", ">", ">=");
-    public static final List<Integer> HAS_ARG;
-    public static final List<Integer> HAS_CONST;
-    public static final List<Integer> HAS_NAME;
-    public static final List<Integer> HAS_JREL;
-    public static final List<Integer> HAS_JABS;
-    public static final List<Integer> HAS_LOCAL;
-    public static final List<Integer> HAS_COMPARE;
-    public static final List<Integer> HAS_FREE;
-    public static final List<Integer> HAS_NARGS = List.of();
+    public static final Set<Integer> HAS_ARG;
+    public static final Set<Integer> HAS_CONST;
+    public static final Set<Integer> HAS_NAME;
+    public static final Set<Integer> HAS_JREL;
+    public static final Set<Integer> HAS_JABS;
+    public static final Set<Integer> HAS_LOCAL;
+    public static final Set<Integer> HAS_COMPARE;
+    public static final Set<Integer> HAS_FREE;
+    public static final Set<Integer> HAS_NARGS = Set.of();
     public static final List<String> OP_NAME;
     public static final Map<String, Integer> OP_MAP;
 
@@ -347,14 +348,14 @@ public final class Opcode {
             }
         }
 
-        HAS_ARG = List.copyOf(o.hasArg);
-        HAS_CONST = List.copyOf(o.hasConst);
-        HAS_NAME = List.copyOf(o.hasName);
-        HAS_JREL = List.copyOf(o.hasJrel);
-        HAS_JABS = List.copyOf(o.hasJabs);
-        HAS_LOCAL = List.copyOf(o.hasLocal);
-        HAS_COMPARE = List.copyOf(o.hasCompare);
-        HAS_FREE = List.copyOf(o.hasFree);
+        HAS_ARG = Set.copyOf(o.hasArg);
+        HAS_CONST = Set.copyOf(o.hasConst);
+        HAS_NAME = Set.copyOf(o.hasName);
+        HAS_JREL = Set.copyOf(o.hasJrel);
+        HAS_JABS = Set.copyOf(o.hasJabs);
+        HAS_LOCAL = Set.copyOf(o.hasLocal);
+        HAS_COMPARE = Set.copyOf(o.hasCompare);
+        HAS_FREE = Set.copyOf(o.hasFree);
         OP_NAME = List.of(o.opName);
         OP_MAP = Map.copyOf(o.opMap);
     }

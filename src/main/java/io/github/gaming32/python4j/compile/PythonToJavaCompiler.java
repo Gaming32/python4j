@@ -300,9 +300,9 @@ public class PythonToJavaCompiler {
             }
             if (insnLabel != null) {
                 meth.mark(insnLabel);
-            }
-            if (insn.getStartsLine().isPresent()) {
-                meth.visitLineNumber(insn.getStartsLine().getAsInt(), insnLabel);
+                if (insn.getStartsLine().isPresent()) {
+                    meth.visitLineNumber(insn.getStartsLine().getAsInt(), insnLabel);
+                }
             }
             final int op = Disassemble.deoptop(insn.getOpcode());
             final int arg = insn.getArg().orElse(-1);

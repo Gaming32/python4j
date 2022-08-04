@@ -651,6 +651,10 @@ public class PyUnicode extends PyObject {
         }
     }
 
+    public static PyUnicode decodeUTF8(byte[] data, String errors) {
+        return decodeUTF8Stateful(data, data.length, errors, null);
+    }
+
     public static PyUnicode decodeUTF8(byte[] data, int size, String errors) {
         return decodeUTF8Stateful(data, size, errors, null);
     }

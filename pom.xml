@@ -15,23 +15,36 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
+    <asm.version>9.3</asm.version>
+    <jna.version>5.12.1</jna.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>9.3</version>
+      <version>${asm.version}</version>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>9.3</version>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.java.dev.jna</groupId>
+      <artifactId>jna</artifactId>
+      <version>${jna.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.java.dev.jna</groupId>
+      <artifactId>jna-platform</artifactId>
+      <version>${jna.version}</version>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
-      <version>9.3</version>
+      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
