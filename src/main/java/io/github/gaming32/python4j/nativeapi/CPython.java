@@ -1,7 +1,9 @@
 package io.github.gaming32.python4j.nativeapi;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -10,6 +12,7 @@ import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.Structure.FieldOrder;
+import com.sun.jna.WString;
 
 import io.github.gaming32.python4j.objects.PyCodeObject;
 import io.github.gaming32.python4j.pycfile.MarshalReader;
@@ -56,6 +59,7 @@ public final class CPython {
         boolean Py_IsInitialized();
         void PyConfig_InitIsolatedConfig(Pointer config);
         PyStatus.ByValue Py_InitializeFromConfig(Pointer config);
+        void Py_SetPath(WString path);
         boolean PyStatus_Exception(PyStatus.ByValue status);
         void Py_ExitStatusException(PyStatus.ByValue status);
         void Py_IncRef(Pointer o);
@@ -108,6 +112,19 @@ public final class CPython {
         if (!PythonLibrary.INSTANCE.Py_IsInitialized()) {
             final Pointer config = new Pointer(Native.malloc(512)); // Should be plenty of space
             PythonLibrary.INSTANCE.PyConfig_InitIsolatedConfig(config);
+            try {
+                PythonLibrary.INSTANCE.Py_SetPath(new WString(
+                    new File(
+                        CPython.class
+                            .getProtectionDomain()
+                            .getCodeSource()
+                            .getLocation()
+                            .toURI()
+                    ).toString()
+                ));
+            } catch (URISyntaxException e) {
+                throw new Error(e);
+            }
             final var status = PythonLibrary.INSTANCE.Py_InitializeFromConfig(config);
             if (PythonLibrary.INSTANCE.PyStatus_Exception(status)) {
                 PythonLibrary.INSTANCE.Py_ExitStatusException(status);
