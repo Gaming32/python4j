@@ -22,14 +22,14 @@ import io.github.gaming32.python4j.util.UnsafeUtil;
 
 public final class DirectIO {
     private static interface CommonC extends Library {
-        CommonC INSTANCE = Native.load(Platform.isWindows() ? "msvcrt" : "c", CommonC.class);
+        CommonC INSTANCE = Native.load(Platform.C_LIBRARY_NAME, CommonC.class);
 
         boolean isatty(int fd);
         String strerror(int errnum);
     }
 
     private static interface Nt extends Library {
-        Nt INSTANCE = Native.load("msvcrt", Nt.class);
+        Nt INSTANCE = Native.load(Platform.C_LIBRARY_NAME, Nt.class);
 
         int _wopen(WString filename, int oflag, int pmode);
         int _close(int fd);
@@ -43,7 +43,7 @@ public final class DirectIO {
     }
 
     private static interface Posix extends Library {
-        Posix INSTANCE = Native.load("c", Posix.class);
+        Posix INSTANCE = Native.load(Platform.C_LIBRARY_NAME, Posix.class);
 
         int open(String path, int flags, int mode);
         int close(int fd);

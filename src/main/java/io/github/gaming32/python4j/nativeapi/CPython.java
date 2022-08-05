@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.Structure.FieldOrder;
@@ -17,7 +18,7 @@ import io.github.gaming32.python4j.pycfile.MarshalWriter;
 
 public final class CPython {
     private static interface PythonLibrary extends Library {
-        PythonLibrary INSTANCE = Native.load("python311", PythonLibrary.class);
+        PythonLibrary INSTANCE = Native.load(Platform.isWindows() ? "python311" : "python3.11", PythonLibrary.class);
 
         @SuppressWarnings("unused")
         @FieldOrder({"cf_flags", "cf_feature_version"})
@@ -89,7 +90,7 @@ public final class CPython {
         PythonLibrary.INSTANCE.Py_DecRef(codeCP);
         final long bytesSize = PythonLibrary.INSTANCE.PyBytes_Size(marshalledCodeCP);
         if (bytesSize > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("Code is too large to be marshalled");
+            throw new IllegalArgumentException("Code is too large to be unmarshalled");
         }
         final Pointer marshalledCodePtr = PythonLibrary.INSTANCE.PyBytes_AsString(marshalledCodeCP);
 
@@ -106,7 +107,9 @@ public final class CPython {
 
     private static void maybeInit() {
         if (!PythonLibrary.INSTANCE.Py_IsInitialized()) {
-            final Pointer config = new Pointer(Native.malloc(512)); // Should be plenty of space
+            // Don't use Memory, since that frees the memory with the instance, which may cause issues
+            // 512 bytes Should be plenty of space.
+            final Pointer config = new Pointer(Native.malloc(512));
             PythonLibrary.INSTANCE.PyConfig_InitIsolatedConfig(config);
             final var status = PythonLibrary.INSTANCE.Py_InitializeFromConfig(config);
             if (PythonLibrary.INSTANCE.PyStatus_Exception(status)) {
